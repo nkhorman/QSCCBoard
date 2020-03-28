@@ -1,3 +1,4 @@
 *.dat
 *.code-workspace
 .vscode
+*.[od]
