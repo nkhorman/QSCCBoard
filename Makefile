@@ -1,7 +1,7 @@
 PROG=		prog
 
 SRCSC=		
-SRCSCPP=	main.cpp
+SRCSCPP=	main.cpp CBoard.cpp
 SRCS=		${SRCSC} ${SRCSCPP}
 
 OBJSC=		${SRCSC:.c=.o}
