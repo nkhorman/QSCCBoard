@@ -7,6 +7,7 @@
 #include <sstream>
 #include <fstream>
 #include <ostream>
+#include <istream>
 #include <string>
 #include <cstdint>
 #include <vector>
@@ -48,9 +49,9 @@ typedef struct __attribute__((packed)) _brd_hdr_t
 	uint8_t count_repeat_pickup;
 	uint8_t count_repeat_place;
 	uint8_t count_extent;
-	uint8_t size_file_low;
+	uint8_t size_file_lo;
 	uint8_t size_file_hi; // add 0xa8
-	uint8_t res2[6];
+	uint8_t res1[6];
 	uint8_t seq_hi;
 } brd_hdr_t;
 
@@ -232,23 +233,23 @@ typedef struct __attribute__((packed)) _brd_fmt_extent_t
 }brd_fmt_extent_t;
 
 // Repeat - Place
-// Offset 0 - 183
-// Offset 1 - 7
-// Offset 2 - 0
-// Offset 3 - 0
-// Offset 4 - 0
-// Offset 5 - 0
-// Offset 6 - 0
-// Offset 7 - 0
+// Offset 0 - 183 - imageColSpanHi
+// Offset 1 - 7 - imageColSpanLo
+// Offset 2 - 0 - ? seems like a byte value
+// Offset 3 - 0 - ? seems like a byte value
+// Offset 4 - 0 - imageRowSpanHi
+// Offset 5 - 0 - imageRowSpanLo
+// Offset 6 - 0 - ? seems like a byte value
+// Offset 7 - 0 - ? seems like a byte value
 // Offset 8 - 3 - col
 // Offset 9 - 1 - rows
 
 typedef struct __attribute__((packed)) _brd_place_repeat_t
 {
 	uint16_t imageColSpan;
-	uint8_t res1[2];
+	uint16_t res1; // stored as 16 bit value for convenience
 	uint16_t imageRowSpan;
-	uint8_t res2[2];
+	uint16_t res2; // stored as 16 bit value for convenience
 	uint8_t col;
 	uint8_t row;
 }brd_place_repeat_t;
@@ -279,6 +280,8 @@ public:
 		{
 			insert(hdr);
 		};
+
+	static uint FileSize() { return sizeof(brd_hdr_t); };
 
 	friend std::istream &operator>>(std::istream &stream, CBrdInfo &hdr)
 	{
@@ -329,12 +332,19 @@ public:
 		mCountRepeatPick = hdr.count_repeat_pickup;
 		mCountRepeatPlace = hdr.count_repeat_place;
 		mCountExtent = hdr.count_extent;
-		mFileSize = (hdr.size_file_low | ((hdr.size_file_hi - 0xa8) << 8));
+		mFileSize = (hdr.size_file_lo | ((hdr.size_file_hi - 0xa8) << 8));
+		// preserve these across read/write operations
+		mRes1[0] = hdr.res1[0];
+		mRes1[1] = hdr.res1[1];
+		mRes1[2] = hdr.res1[2];
+		mRes1[3] = hdr.res1[3];
+		mRes1[4] = hdr.res1[4];
+		mRes1[5] = hdr.res1[5];
 	};
 
 	brd_hdr_t extract() const
 	{
-		brd_hdr_t hdr;
+		brd_hdr_t hdr = {0};
 
 		hdr.seq_lo = mCountSequence & 0xff;
 		hdr.seq_hi = (mCountSequence & 0x0100) >> 8;
@@ -344,8 +354,15 @@ public:
 		hdr.count_repeat_pickup = mCountRepeatPick & 0xff;
 		hdr.count_repeat_place = mCountRepeatPlace & 0xff;
 		hdr.count_extent = mCountExtent & 0xff;
-		hdr.size_file_low = mFileSize & 0xff;
+		hdr.size_file_lo = mFileSize & 0xff;
 		hdr.size_file_hi = ((mFileSize & 0xff00) >> 8) + 0xa8;
+		// preserve these across read/write operations
+		hdr.res1[0] = mRes1[0];
+		hdr.res1[1] = mRes1[1];
+		hdr.res1[2] = mRes1[2];
+		hdr.res1[3] = mRes1[3];
+		hdr.res1[4] = mRes1[4];
+		hdr.res1[5] = mRes1[5];
 
 		return hdr;
 	}
@@ -358,6 +375,7 @@ public:
 	uint mCountRepeatPlace;
 	uint mCountExtent;
 	uint mFileSize;
+	uint8_t mRes1[6];
 
 	std::string Dump() const
 	{
@@ -392,6 +410,8 @@ public:
 		};
 	virtual ~CBrdSeq() {};
 
+	static uint FileSize() { return sizeof(brd_fmt_seq_t); };
+
 	friend std::istream &operator>>(std::istream &stream, CBrdSeq &seq)
 	{
 		brd_fmt_seq_t brdSeq;
@@ -422,7 +442,7 @@ public:
 
 	brd_fmt_seq_t extract() const
 	{
-		brd_fmt_seq_t seq;
+		brd_fmt_seq_t seq = {0};
 
 		seq.cmd = mCmd & 0xff;
 		seq.param[0] = mParam[0] & 0xff;
@@ -579,7 +599,9 @@ public:
 		, mLoc(CBrdLoc(ppc.loc.x, ppc.loc.y, ppc.loc.z, ppc.loc.t))
 		{};
 	virtual ~CBrdPPC() {};
-	
+
+	static uint FileSize() { return sizeof(brd_fmt_pickplacechuck_t); };
+
 	friend std::istream &operator>>(std::istream &stream, CBrdPPC &ppc)
 	{
 		brd_fmt_pickplacechuck_t brdPpc;
@@ -608,7 +630,7 @@ public:
 
 	brd_fmt_pickplacechuck_t extract() const
 	{
-		brd_fmt_pickplacechuck_t brdPpc;
+		brd_fmt_pickplacechuck_t brdPpc = {0};
 
 		brdPpc.altIndex = mAltIndex;
 		brdPpc.extent = mExtent;
@@ -710,7 +732,7 @@ public:
 
 	brd_fmt_extent_lae_t extract() const
 	{
-		brd_fmt_extent_lae_t lae;
+		brd_fmt_extent_lae_t lae = {0};
 
 		lae.extent = mNext & 0xff;
 		lae.widthLo = mWidth.Val() & 0xff;
@@ -778,6 +800,7 @@ public:
 		, mRowStep(0)
 		, mColumns(0)
 		, mRows(0)
+		, mRes1(0)
 		{};
 	CBrdExtentRepeatPickup(brd_fmt_extent_pickup_repeat_t v)
 		: mNext(v.extent)
@@ -787,6 +810,7 @@ public:
 		, mRowStep(v.rowStepLo | ((v.rowStepHiCount & 0x07) << 8))
 		, mColumns(v.columns)
 		, mRows(v.rows)
+		, mRes1(v.res1)
 		{};
 	
 	void insert(brd_fmt_extent_pickup_repeat_t v)
@@ -798,19 +822,21 @@ public:
 		mRowStep = v.rowStepLo | ((v.rowStepHiCount & 0x07) << 8);
 		mColumns = v.columns;
 		mRows = v.rows;
+		mRes1 = v.res1;
 	};
 
 	brd_fmt_extent_pickup_repeat_t extract() const
 	{
-		brd_fmt_extent_pickup_repeat_t brdPure;
+		brd_fmt_extent_pickup_repeat_t brdPure = {0};
 
 		brdPure.extent = mNext & 0xff;
-		brdPure.columnStepHiCount = ((mColumnCount & 0x7f) << 3) | ((mColumnStep & 0x3f) >> 8);
+		brdPure.columnStepHiCount = ((mColumnCount & 0x7f) << 3) | ((mColumnStep & 0x3f00) >> 8);
 		brdPure.columnStepLo = mColumnStep & 0xff;
-		brdPure.rowStepHiCount = ((mRowCount & 0x7f) << 3) | ((mRowStep & 0x3f) >> 8);
+		brdPure.rowStepHiCount = ((mRowCount & 0x7f) << 3) | ((mRowStep & 0x3f00) >> 8);
 		brdPure.rowStepLo = mRowStep & 0xff;
 		brdPure.columns = mColumns & 0xff;
 		brdPure.rows = mRows & 0xff;
+		brdPure.res1 = mRes1;
 
 		return brdPure;
 	}
@@ -865,6 +891,7 @@ protected:
 	uint mRowStep;
 	uint mColumns;
 	uint mRows;
+	uint mRes1;
 };
 
 class CBrdExtent
@@ -879,7 +906,9 @@ public:
 			insert(brdExtent);
 		};
 	virtual ~CBrdExtent() {};
-	
+
+	static uint FileSize() { return sizeof(brd_fmt_extent_t); };
+
 	friend std::istream &operator>>(std::istream &stream, CBrdExtent &extent)
 	{
 		brd_fmt_extent_t brdExtent;
@@ -914,7 +943,7 @@ public:
 
 	brd_fmt_extent_t extract() const
 	{
-		brd_fmt_extent_t brdExtent;
+		brd_fmt_extent_t brdExtent = {0};
 
 		brdExtent.cmd = Cmd() & 0xff;
 
@@ -979,17 +1008,21 @@ class CBrdRepeatPlace
 {
 public:
 	CBrdRepeatPlace()
-		: mCol(0)
-		, mRow(0)
-		, mImageSpanCol(0)
+		: mImageSpanCol(0)
+		, mRes1(0)
 		, mImageSpanRow(0)
+		, mRes2(0)
+		, mCol(0)
+		, mRow(0)
 		{};
 	CBrdRepeatPlace(brd_place_repeat_t brdPlRe)
 		{
 			insert(brdPlRe);
 		};
 	virtual ~CBrdRepeatPlace() {};
-	
+
+	static uint FileSize() { return sizeof(brd_place_repeat_t); };
+
 	friend std::istream &operator>>(std::istream &stream, CBrdRepeatPlace &repl)
 	{
 		brd_place_repeat_t brdPlRe;
@@ -1009,11 +1042,23 @@ public:
 		return stream;
 	};
 
+// Repeat - Place
+// Offset 0 - 183 - imageColSpanHi
+// Offset 1 - 7 - imageColSpanLo
+// Offset 2 - 0 - ? seems like a byte value
+// Offset 3 - 0 - ? seems like a byte value
+// Offset 4 - 0 - imageRowSpanHi
+// Offset 5 - 0 - imageRowSpanLo
+// Offset 6 - 0 - ? seems like a byte value
+// Offset 7 - 0 - ? seems like a byte value
+// Offset 8 - 3 - col
+// Offset 9 - 1 - rows
+
 	void insert(brd_place_repeat_t v)
 	{
-		// uint8_t *pbuf = (uint8_t *)&buf;
+		// uint8_t *pbuf = (uint8_t *)&v;
 		// std::cout
-		// 	<< "repeat detail - "
+		// 	<< "repeat detail in - "
 		// 	<< "0: " << (uint)pbuf[0] << ", "
 		// 	<< "1: " << (uint)pbuf[1] << ", "
 		// 	<< "2: " << (uint)pbuf[2] << ", "
@@ -1027,19 +1072,39 @@ public:
 		// 	<< std::endl
 		// 	;
 		mImageSpanRow = v.imageRowSpan;
+		mRes1 = v.res1;
 		mImageSpanCol = v.imageColSpan;
+		mRes2 = v.res2;
 		mRow = v.row;
 		mCol = v.col;
 	};
 
 	brd_place_repeat_t extract() const
 	{
-		brd_place_repeat_t brdPlRe;
+		brd_place_repeat_t brdPlRe = {0};
 
 		brdPlRe.imageRowSpan = mImageSpanRow;
+		brdPlRe.res1 = mRes1;
 		brdPlRe.imageColSpan = mImageSpanCol;
+		brdPlRe.res2 = mRes2;
 		brdPlRe.row = mRow;
 		brdPlRe.col = mCol;
+
+		// uint8_t *pbuf = (uint8_t *)&brdPlRe;
+		// std::cout
+		// 	<< "repeat detail out - "
+		// 	<< "0: " << (uint)pbuf[0] << ", "
+		// 	<< "1: " << (uint)pbuf[1] << ", "
+		// 	<< "2: " << (uint)pbuf[2] << ", "
+		// 	<< "3: " << (uint)pbuf[3] << ", "
+		// 	<< "4: " << (uint)pbuf[4] << ", "
+		// 	<< "5: " << (uint)pbuf[5] << ", "
+		// 	<< "6: " << (uint)pbuf[6] << ", "
+		// 	<< "7: " << (uint)pbuf[7] << ", "
+		// 	<< "8: " << (uint)pbuf[8] << ", "
+		// 	<< "9: " << (uint)pbuf[9]
+		// 	<< std::endl
+		// 	;
 
 		return brdPlRe;
 	}
@@ -1059,10 +1124,12 @@ public:
 	}
 
 protected:
+	uint mImageSpanCol;
+	uint mRes1; // stored as 16 bit value for convenience
+	uint mImageSpanRow;
+	uint mRes2; // stored as 16 bit value for convenience
 	uint mCol;
 	uint mRow;
-	uint mImageSpanCol;
-	uint mImageSpanRow;
 };
 
 
@@ -1079,28 +1146,29 @@ public:
 
 		stream >> info;
 		brd.Info(info);
-
-		CBrdSeq seq;
-		for(uint i=0,q=info.mCountSequence; i<q; i++) { stream >> seq; brd.Seq(seq); }
-
-		CBrdPPC ppc;
-		for(uint i=0,q=info.mCountPick; i<q; i++) { stream >> ppc; brd.Pickup(ppc); }
-		for(uint i=0,q=info.mCountPlace; i<q; i++) { stream >> ppc; brd.Place(ppc); }
-		for(uint i=0,q=info.mCountChuck; i<q; i++) { stream >> ppc; brd.Chuck(ppc); }
-
-		CBrdRepeatPlace brp;
-		for(uint i=0,q=info.mCountRepeatPick; i<q; i++) { stream >> brp; brd.RepeatPickup(brp); }
-		for(uint i=0,q=info.mCountRepeatPlace; i<q; i++) { stream >> brp; brd.RepeatPlace(brp); }
-
-		CBrdExtent lae;
-		for(uint i=0,q=info.mCountExtent; i<q; i++) { stream >> lae; brd.Extent(lae); }
+		for(uint i=0,q=info.mCountSequence; i<q; i++) { CBrdSeq seq; stream >> seq; brd.Seq(seq); }
+		for(uint i=0,q=info.mCountPick; i<q; i++) { CBrdPPC ppc; stream >> ppc; brd.Pickup(ppc); }
+		for(uint i=0,q=info.mCountPlace; i<q; i++) { CBrdPPC ppc; stream >> ppc; brd.Place(ppc); }
+		for(uint i=0,q=info.mCountChuck; i<q; i++) { CBrdPPC ppc; stream >> ppc; brd.Chuck(ppc); }
+		for(uint i=0,q=info.mCountRepeatPick; i<q; i++) { CBrdRepeatPlace brp; stream >> brp; brd.RepeatPickup(brp); }
+		for(uint i=0,q=info.mCountRepeatPlace; i<q; i++) { CBrdRepeatPlace brp; stream >> brp; brd.RepeatPlace(brp); }
+		for(uint i=0,q=info.mCountExtent; i<q; i++) { CBrdExtent lae; stream >> lae; brd.Extent(lae); }
 
 		return stream;
 	};
 
-	friend std::ostream &operator<<(std::ostream &stream, const CBoard &brd)
+	friend std::ostream &operator<<(std::ostream &stream, CBoard &brd)
 	{
-		// write
+		brd.FilesizeCalculate();
+		stream << brd.Info();
+		std::for_each(brd.Seq().begin(), brd.Seq().end(), [&](CBrdSeq const &item) mutable { stream << item; });
+		std::for_each(brd.Pickup().begin(), brd.Pickup().end(), [&](CBrdPPC const &item) mutable { stream << item; });
+		std::for_each(brd.Place().begin(), brd.Place().end(), [&](CBrdPPC const &item) mutable { stream << item; });
+		std::for_each(brd.Chuck().begin(), brd.Chuck().end(), [&](CBrdPPC const &item) mutable { stream << item; });
+		std::for_each(brd.RepeatPickup().begin(), brd.RepeatPickup().end(), [&](CBrdRepeatPlace const &item) mutable { stream << item; });
+		std::for_each(brd.RepeatPlace().begin(), brd.RepeatPlace().end(), [&](CBrdRepeatPlace const &item) mutable { stream << item; });
+		std::for_each(brd.Extent().begin(), brd.Extent().end(), [&](CBrdExtent const &item) mutable { stream << item; });
+
 		return stream;
 	};
 
@@ -1119,15 +1187,31 @@ public:
 	inline void Chuck(CBrdPPC v) { mChuck.push_back(v); };
 	inline std::vector<CBrdPPC> const &Chuck() const { return mChuck; };
 
-	inline void Extent(CBrdExtent v) { mExtent.push_back(v); };
-	inline std::vector<CBrdExtent> const &Extent() const { return mExtent; };
-
 	inline void RepeatPickup(CBrdRepeatPlace v) { mRepeatPickup.push_back(v); };
 	inline std::vector<CBrdRepeatPlace> const &RepeatPickup() const { return mRepeatPickup; };
 
 	inline void RepeatPlace(CBrdRepeatPlace v) { mRepeatPlace.push_back(v); };
 	inline std::vector<CBrdRepeatPlace> const &RepeatPlace() const { return mRepeatPlace; };
-	
+
+	inline void Extent(CBrdExtent v) { mExtent.push_back(v); };
+	inline std::vector<CBrdExtent> const &Extent() const { return mExtent; };
+
+	void FilesizeCalculate()
+	{
+		uint filesizeOld = mInfo.mFileSize;
+		uint filesizeNew =
+			mInfo.FileSize()
+			+ (mInfo.mCountSequence * CBrdSeq::FileSize())
+			+ (mInfo.mCountPick * CBrdPPC::FileSize())
+			+ (mInfo.mCountPlace * CBrdPPC::FileSize())
+			+ (mInfo.mCountChuck * CBrdPPC::FileSize())
+			+ (mInfo.mCountRepeatPick * CBrdRepeatPlace::FileSize())
+			+ (mInfo.mCountRepeatPlace * CBrdRepeatPlace::FileSize())
+			+ (mInfo.mCountExtent * CBrdExtent::FileSize())
+			;
+		mInfo.mFileSize = filesizeNew;
+	}	
+
 	std::string Dump() const
 	{
 		std::ostringstream oss;
@@ -1156,6 +1240,7 @@ protected:
 };
 
 
+// ---------------------------------------------
 void test2(char const *fname)
 {
 	std::ifstream ifstr(fname, std::ifstream::in | std::ifstream::binary);
@@ -1172,213 +1257,37 @@ void test2(char const *fname)
 	}
 }
 
-
-// ---------------------------------------------
-
-/*
-enum
+void test3(char const *fnameIn, char const *fnameOut)
 {
-	SM_HDR,
-	SM_SEQUENCE,
-	SM_PICKUP,
-	SM_PLACE,
-	SM_CHUCK,
-	SM_REPEAT_PICKUP,
-	SM_REPEAT_PLACE,
-	SM_EXTENT,
-	SM_FINAL,
-	SM_ERROR,
-	SM_EOF,
-	SM_END
-};
+	std::ifstream ifs(fnameIn, std::ifstream::in | std::ifstream::binary);
 
-void test1(char const *fname)
-{
-	FILE *fin = fopen(fname, "r");
-
-	if(fin != NULL)
+	if(ifs.is_open())
 	{
-		int stateMach = SM_HDR;
-		char *pSmError = NULL;
 		CBoard board;
 
-		while(stateMach != SM_END)
+		ifs >> board;
+
+		//std::cout << board.Dump();
+
+		ifs.close();
+
+		std::ofstream ofs(fnameOut, std::ofstream::out | std::ofstream::binary);
+		if(ofs.is_open())
 		{
-			if(feof(fin))
-				stateMach = SM_EOF;
-			switch(stateMach)
-			{
-				case SM_HDR: // header
-					{
-						brd_hdr_t hdr;
-
-						if(fread(&hdr, sizeof(hdr), 1, fin) == 1)
-						{
-							CBrdInfo info(hdr);
-
-							board.Info(info);
-							std::cout << "header - " << info.Dump() << std::endl;
-							stateMach = SM_SEQUENCE;
-						}
-						else stateMach = SM_ERROR;
-					}
-					break;
-
-				case SM_SEQUENCE:
-					if(board.Info().mCountSequence)
-					{
-						brd_fmt_seq_t brdSeq;
-
-						if(fread(&brdSeq, sizeof(brdSeq), 1, fin) == 1)
-						{
-							CBrdSeq seq(brdSeq);
-							board.Seq(seq);
-							std::cout << "sequence " << board.Seq().size() << " - " << seq.Dump() << std::endl;
-							if(board.Seq().size() >= board.Info().mCountSequence)
-								stateMach = SM_PICKUP;
-						}
-						else stateMach = SM_ERROR;
-					}
-					else stateMach = SM_PICKUP;
-					break;
-
-				case SM_PICKUP:
-					if(board.Info().mCountPick)
-					{
-						brd_fmt_pickplacechuck_t brdPpc;
-
-						if(fread(&brdPpc, sizeof(brdPpc), 1, fin) == 1)
-						{
-							CBrdPPC ppc(brdPpc);
-							board.Pickup(ppc);
-							std::cout << "pickup " << board.Pickup().size() << " - " << ppc.Dump() << std::endl;
-							if(board.Pickup().size() >= board.Info().mCountPick)
-								stateMach = SM_PLACE;
-						}
-						else stateMach = SM_ERROR;
-					}
-					else stateMach = SM_PLACE;
-					break;
-
-				case SM_PLACE:
-					if(board.Info().mCountPlace)
-					{
-						brd_fmt_pickplacechuck_t brdPpc;
-
-						if(fread(&brdPpc, sizeof(brdPpc), 1, fin) == 1)
-						{
-							CBrdPPC ppc(brdPpc);
-							board.Place(ppc);
-							std::cout << "place " << board.Place().size() << " - " << ppc.Dump() << std::endl;
-							if(board.Place().size() >= board.Info().mCountPlace)
-								stateMach = SM_CHUCK;
-						}
-						else stateMach = SM_ERROR;
-					}
-					else stateMach = SM_CHUCK;
-					break;
-
-				case SM_CHUCK:
-					if(board.Info().mCountChuck)
-					{
-						brd_fmt_pickplacechuck_t brdPpc;
-
-						if(fread(&brdPpc, sizeof(brdPpc), 1, fin) == 1)
-						{
-							CBrdPPC ppc(brdPpc);
-							board.Chuck(ppc);
-							std::cout << "chuck " << board.Chuck().size() << " - " << ppc.Dump() << std::endl;
-							if(board.Chuck().size() >= board.Info().mCountChuck)
-								stateMach = SM_REPEAT_PICKUP;
-						}
-						else stateMach = SM_ERROR;
-					}
-					else stateMach = SM_REPEAT_PICKUP;
-					break;
-
-				case SM_REPEAT_PICKUP:
-					if(board.Info().mCountRepeatPick)
-					{
-						brd_place_repeat_t buf;
-
-						if(fread(&buf, sizeof(buf), 1, fin) == 1)
-						{
-							CBrdRepeatPlace detail(buf);
-							board.RepeatPickup(detail);
-							std::cout << "repeat pickup " << board.RepeatPickup().size() << " - " << detail.Dump() << std::endl;
-							if(board.RepeatPickup().size() >= board.Info().mCountRepeatPick)
-								stateMach = SM_REPEAT_PLACE;
-						}
-						else stateMach = SM_ERROR;
-					}
-					else stateMach = SM_REPEAT_PLACE;
-					break;
-
-				case SM_REPEAT_PLACE:
-					if(board.Info().mCountRepeatPlace)
-					{
-						brd_place_repeat_t buf;
-
-						if(fread(&buf, sizeof(buf), 1, fin) == 1)
-						{
-							CBrdRepeatPlace detail(buf);
-							board.RepeatPlace(detail);
-							std::cout << "repeat place " << board.RepeatPlace().size() << " - " << detail.Dump() << std::endl;
-							if(board.RepeatPlace().size() >= board.Info().mCountRepeatPlace)
-								stateMach = SM_EXTENT;
-						}
-						else stateMach = SM_ERROR;
-					}
-					else stateMach = SM_EXTENT;
-					break;
-
-				case SM_EXTENT:
-					if(board.Info().mCountExtent)
-					{
-						brd_fmt_extent_t brdExtent;
-
-						if(fread(&brdExtent, sizeof(brdExtent), 1, fin) == 1)
-						{
-							CBrdExtent extent(brdExtent);
-
-							board.Extent(extent);
-							std::cout << "extent " << board.Extent().size() << " - " << extent.Dump() << std::endl;
-							if(board.Extent().size() >= board.Info().mCountExtent)
-								stateMach = SM_FINAL;
-						}
-						else stateMach = SM_ERROR;
-					}
-					else stateMach = SM_FINAL;
-					break;
-
-				case SM_ERROR:
-					std::cout << "error" << std::endl;
-					stateMach = SM_END;
-					break;
-
-				case SM_FINAL:
-					std::cout << "final" << std::endl;
-					stateMach = SM_END;
-					break;
-
-				case SM_EOF:
-					std::cout << "unexpected EOF" << std::endl;
-					stateMach = SM_END;
-					break;
-			}
+			ofs << board;
+			ofs.flush();
+			ofs.clear();
 		}
-		fclose(fin);
-
-		if(stateMach != SM_END)
-			std::cout << "pre-mature exit - steate: " << stateMach << std::endl;
+		
 	}
 }
-*/
 
 int main(int argc, char **argv)
 {
-	if(argc > 1)
+	if(argc == 2)
 		test2(argv[1]);
+	else if(argc == 3)
+		test3(argv[1], argv[2]);
 
 	return 0;
 }
