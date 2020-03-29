@@ -253,6 +253,7 @@ typedef struct __attribute__((packed)) _brd_place_repeat_t
 
 
 #ifdef __cplusplus
+#include <fstream>
 #include <vector>
 
 class CBrdInfo
@@ -703,11 +704,13 @@ public:
 	inline void Extent(CBrdExtent v) { mExtent.push_back(v); };
 	inline std::vector<CBrdExtent> const &Extent() const { return mExtent; };
 
-	void FilesizeCalculate();	
-
 	std::string Dump() const;
 
+	void Update();
+
 protected:
+	void FilesizeCalculate();	
+
 	CBrdInfo mInfo;
 	std::vector<CBrdSeq> mSeq;
 	std::vector<CBrdPPC> mPickup;

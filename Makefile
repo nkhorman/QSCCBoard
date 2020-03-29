@@ -1,4 +1,4 @@
-PROG=		prog
+PROG=		qsccboard
 
 SRCSC=		
 SRCSCPP=	main.cpp CBoard.cpp

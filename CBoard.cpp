@@ -536,7 +536,6 @@ std::string CBrdRepeatPlace::Dump() const
 // **
 std::istream &operator>>(std::istream &stream, CBoard &brd)
 {
-	// read
 	CBrdInfo info;
 
 	stream >> info;
@@ -554,7 +553,7 @@ std::istream &operator>>(std::istream &stream, CBoard &brd)
 
 std::ostream &operator<<(std::ostream &stream, CBoard &brd)
 {
-	brd.FilesizeCalculate();
+	brd.Update();
 	stream << brd.Info();
 	std::for_each(brd.Seq().begin(), brd.Seq().end(), [&](CBrdSeq const &item) mutable { stream << item; });
 	std::for_each(brd.Pickup().begin(), brd.Pickup().end(), [&](CBrdPPC const &item) mutable { stream << item; });
@@ -567,9 +566,22 @@ std::ostream &operator<<(std::ostream &stream, CBoard &brd)
 	return stream;
 };
 
+void CBoard::Update()
+{
+	mInfo.mCountSequence = mSeq.size();
+	mInfo.mCountPick = mPickup.size();
+	mInfo.mCountPlace = mPlace.size();
+	mInfo.mCountChuck = mChuck.size();
+	mInfo.mCountRepeatPick = mRepeatPickup.size();
+	mInfo.mCountRepeatPlace = mRepeatPlace.size();
+	mInfo.mCountExtent = mExtent.size();
+
+	FilesizeCalculate();
+}
+
 void CBoard::FilesizeCalculate()
 {
-	uint filesizeOld = mInfo.mFileSize;
+	// uint filesizeOld = mInfo.mFileSize;
 	uint filesizeNew =
 		mInfo.FileSize()
 		+ (mInfo.mCountSequence * CBrdSeq::FileSize())
