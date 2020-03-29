@@ -4,6 +4,7 @@
 #include <string>
 
 #include "CBoard.h"
+#include "stdStringSplit.h"
 
 // for_each thoughts - https://www.fluentcpp.com/2018/03/30/is-stdfor_each-obsolete/
 
@@ -129,6 +130,162 @@ std::ostream &operator<<(std::ostream &stream, const CBrdSeq &seq)
 
 	return stream;
 };
+
+std::string CBrdSeq::Parse(std::string str)
+{
+	std::ostringstream ossError;
+	std::vector<std::string> strs;
+	uint invalidQualifier = 0;
+
+	split(str, " 	", [&](std::string const &v) mutable { strs.push_back(v); });
+
+	// assumes str is alread tolower
+	if(strs.size() >= 1 && strs[0] == "stop")
+	{
+		; // done, mCmd is already == 0
+		if(strs.size() > 1)
+			invalidQualifier = 2;
+	}
+	else if(strs.size() >= 2 && strs[0] == "pickup")
+	{
+		mCmd = 1;
+		uint param1 = std::atoi(strs[1].c_str());
+		uint param3 = (strs.size() == 4 && strs[2] == "lead" && strs[3] == "inspection" ? 223 : 0);
+		mParam.clear();
+		mParam.push_back(param1);
+		mParam.push_back(0);
+		mParam.push_back(param3);
+		if(strs.size() > 2 && param3 == 0)
+			invalidQualifier = 1;
+	}
+	else if(strs.size() >= 2 && strs[0] == "place")
+	{
+		mCmd = 2;
+		uint param1 = std::atoi(strs[1].c_str());
+		uint param2 = (
+			strs.size() == 4 && strs[2] == "dispense" && strs[3] == "only" ? 10
+			: strs.size() == 5 && strs[2] == "dispense" && strs[3] == "and" && strs[4] == "place" ? 11
+			: 255
+			);
+		mParam.clear();
+		mParam.push_back(param1);
+		mParam.push_back(param2);
+		mParam.push_back(0);
+		if(param2 == 255 && strs.size() > 2)
+			invalidQualifier = 2;
+	}
+	else if(strs.size() == 2 && strs[0] == "chuck")
+	{
+		mCmd = 3;
+		uint param1 = std::atoi(strs[1].c_str());
+		mParam.clear();
+		mParam.push_back(param1);
+		mParam.push_back(0);
+		mParam.push_back(0);
+		if(strs.size() > 2)
+			invalidQualifier = 2;
+	}
+	else if(strs.size() >= 2 && strs[0] == "test")
+	{
+		mCmd = 4;
+		uint param = std::atoi(strs[1].c_str());
+		mParam.clear();
+		mParam.push_back(param);
+		mParam.push_back(0);
+		mParam.push_back(0);
+		if(strs.size() > 2)
+			invalidQualifier = 2;
+	}
+	else if(strs.size() >= 2 && strs[0] == "repeat")
+	{
+		mCmd = 5;
+		uint param1 = std::atoi(strs[1].c_str());
+		uint param2= (strs.size() == 3 && strs[2] == "image" ? 9 : 255);
+		mParam.clear();
+		mParam.push_back(param1);
+		mParam.push_back(param2);
+		mParam.push_back(0);
+		if(param2 == 255 && strs.size() > 2)
+			invalidQualifier = 2;
+	}
+	else if(strs.size() >= 2 && strs[0] == "goto")
+	{
+		mCmd = 6;
+		uint param = std::atoi(strs[1].c_str());
+		mParam.clear();
+		mParam.push_back(param);
+		mParam.push_back(0);
+		mParam.push_back(0);
+		if(strs.size() > 2)
+			invalidQualifier = 2;
+	}
+	// wait address
+	// output address
+	else if(strs.size() >= 2 && strs[0] == "home")
+	{
+		mCmd = 9;
+		mParam.clear();
+		uint param = (strs[1] == "all" ? 0
+			: strs[1] == "x" ? 1
+			: strs[1] == "y" ? 2
+			: strs[1] == "z" ? 3
+			: strs[1] == "t" ? 4
+			: 255);
+		mParam.push_back(param);
+		mParam.push_back(0);
+		mParam.push_back(0);
+		if(param == 255 || strs.size() > 2)
+			invalidQualifier = 1;
+	}
+	// if address
+	else if(strs.size() >= 2 && strs[0] == "run")
+	{
+		mCmd = 11;
+		uint param = std::atoi(strs[1].c_str());
+		mParam.clear();
+		mParam.push_back(param);
+		mParam.push_back(0);
+		mParam.push_back(0);
+		if(strs.size() > 2)
+			invalidQualifier = 2;
+	}
+	else if(strs.size() >= 4 && strs[0] == "mod" && strs[1] == "code")
+	{
+		mCmd = 15;
+		uint param1 = std::atoi(strs[2].c_str());
+		uint param2 = std::atoi(strs[3].c_str());
+		mParam.clear();
+		mParam.push_back(param1);
+		mParam.push_back(param2);
+		mParam.push_back(0);
+		if(param1 == 0 || param1 > 74 || strs.size() > 4)
+			invalidQualifier = 2;
+	}
+	else if(strs.size() >= 2 && strs[0] == "transport")
+	{
+		mCmd = 1;
+		uint param = (strs[1] == "hold" ? 0 : strs[1] == "pass" ? 1 : 255);
+		mParam.clear();
+		mParam.push_back(param);
+		mParam.push_back(0);
+		mParam.push_back(0);
+		if(param == 255 || strs.size() > 2)
+			invalidQualifier = 2;
+	}
+	// fetch tray
+	else
+		ossError << "Invalid command or parameters: '" << str << "'";
+
+	if(invalidQualifier)
+	{
+		ossError << strs[0] << " - Invalid qualifier '";
+		for(uint i=invalidQualifier; i<strs.size(); i++)
+			ossError << " " << strs[i];
+		ossError << "'";
+	}
+
+	return ossError.str();
+}
 
 void CBrdSeq::insert(brd_fmt_seq_t v)
 {

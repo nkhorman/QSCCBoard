@@ -13,24 +13,7 @@
 
 #include "CBoard.h"
 #include "CAppArg.h"
-
-
-// Split a std::string by the chars in "split", and call "fn" for each of those "strings" 
-// The "str" need not be terminated with "split" chars 
-void split(std::string str, std::string split, std::function<void(std::string const &)>fn)
-{
-    for(size_t r=str.find_first_of(split); r != std::string::npos;)
-    {
-        if(fn)
-            fn(str.substr(0, r));
-        r = str.find_first_not_of(split, r);
-        str.erase(0, r);
-        r = str.find_first_of(split);
-    }
-
-    if(str.length() && fn)
-        fn(str);
-}
+#include "stdStringSplit.h"
 
 class CBoardEx : public CBoard
 {
@@ -41,24 +24,73 @@ public:
     virtual ~CBoardEx() {};
 
     inline void ModeJson(bool v = true) { mbModeJson = v; };
-    void ImportExport(bool bImport, std::vector<std::string> const &args);
+    std::string ImportExport(bool bImport, std::vector<std::string> const &args);
 
     std::string SectionDump(std::string strSectionName);
 
 protected:
-    void Import(std::vector<std::string> const &args);
-    void Export(std::vector<std::string> const &args);
+	std::string ImportSequence(std::ifstream &ifs);
+    std::string Import(std::vector<std::string> const &args);
+    std::string Export(std::vector<std::string> const &args);
 
     bool mbModeJson;
 };
 
-void CBoardEx::Import(std::vector<std::string> const &args)
+std::string CBoardEx::ImportSequence(std::ifstream &ifs)
 {
+	std::vector<CBrdSeq> arSeq;
+	std::ostringstream ossError;
+	uint lineNum = 0;
 
+	while(!ifs.eof() && ossError.str().size() == 0)
+	{
+		std::string strLine;
+		std::getline(ifs, strLine);
+
+		lineNum ++;
+		if(strLine.size())
+		{
+			std::transform(strLine.begin(), strLine.end(), strLine.begin(), [](const unsigned char i){ return tolower(i); });
+			CBrdSeq seq;
+			ossError << seq.Parse(strLine);
+			if(ossError.str().size() == 0)
+				arSeq.push_back(seq);
+		}
+	}
+
+	if(ossError.str().size())
+		ossError << " on line " << lineNum;
+
+	if(ossError.str().size() == 0 && arSeq.size())
+		mSeq = arSeq;
+
+	return ossError.str();
 }
 
-void CBoardEx::Export(std::vector<std::string> const &args)
+std::string CBoardEx::Import(std::vector<std::string> const &args)
 {
+	std::ostringstream ossError;
+	if(args.size() == 2)
+	{
+		std::string sectionName = args[0];
+		std::string fname = args[1];
+		std::ifstream ifstr(fname.c_str(), std::ifstream::in);
+
+		if(ifstr.is_open())
+		{
+			if(sectionName == "sequence")
+				ossError << ImportSequence(ifstr);
+			ifstr.close();
+		}
+	}
+
+	return ossError.str();
+}
+
+std::string CBoardEx::Export(std::vector<std::string> const &args)
+{
+	std::ostringstream ossError;
+
 	if(args.size() == 2)
 	{
 		std::ostringstream oss;
@@ -82,9 +114,9 @@ void CBoardEx::Export(std::vector<std::string> const &args)
 		else if(sectionName == "extent")
 			for(uint i=0,q=mExtent.size(); i<q; i++) { oss << mExtent[i].Dump() << std::endl; }
 		else
-			std::cerr << "Error - Export - Invalid secion name. Try;"
+			ossError << "Error - Export - Invalid secion name. Try;"
 				" sequence, pickup, place, chuck, repeat pickup, repeat place, or extent"
-				<< std::endl;
+				;
 
 		if(oss.str().size())
 		{
@@ -98,10 +130,14 @@ void CBoardEx::Export(std::vector<std::string> const &args)
 			}
 		}
 	}
+
+	return ossError.str();
 }
 
-void CBoardEx::ImportExport(bool bImport, std::vector<std::string> const &args)
+std::string CBoardEx::ImportExport(bool bImport, std::vector<std::string> const &args)
 {
+	std::ostringstream ossError;
+
     std::for_each(args.begin(), args.end(), [&](std::string const &arg) mutable
     {
         std::vector<std::string> strOpArgs;
@@ -114,9 +150,11 @@ void CBoardEx::ImportExport(bool bImport, std::vector<std::string> const &args)
             else
                 Export(strOpArgs);
         }
-		else std::cerr << "Error - " << (bImport ? "Import" : "Export")
-			<< " - Invalid number of arguments. Try [section name]=[file name]" << std::endl;
+		else ossError << "Error - " << (bImport ? "Import" : "Export")
+			<< " - Invalid number of arguments. Try [section name]=[file name]";
     });
+
+	return ossError.str();
 }
 
 std::string CBoardEx::SectionDump(std::string sectionName)
@@ -184,7 +222,9 @@ int main(int argc, char **argv)
             strCmd = key;
             split(val, "     ", [&](std::string const &valarg) mutable { strCmdArgs.push_back(valarg); });
 
-            board.ImportExport(action == "import", strCmdArgs);
+            std::string strError = board.ImportExport(action == "import", strCmdArgs);
+			if(strError.size())
+				std::cerr << strError << std::endl;
         }
         else if(action == "dump")
         {

@@ -335,6 +335,8 @@ public:
 	
 	std::string Dump() const;
 
+	std::string Parse(std::string str);
+
 protected:
 	uint mCmd;
 	std::vector<uint> mParam;
