@@ -14,26 +14,28 @@
 #include "CBoard.h"
 #include "CAppArg.h"
 #include "stdStringSplit.h"
+#include "CBom.h"
 
 class CBoardEx : public CBoard
 {
 public:
     CBoardEx()
-        : mbModeJson(false)
+        // : mbModeJson(false)
         {};
     virtual ~CBoardEx() {};
 
-    inline void ModeJson(bool v = true) { mbModeJson = v; };
+    // inline void ModeJson(bool v = true) { mbModeJson = v; };
     std::string ImportExport(bool bImport, std::vector<std::string> const &args);
 
     std::string SectionDump(std::string strSectionName);
 
 protected:
 	std::string ImportSequence(std::ifstream &ifs);
+	std::string ImportPlace(std::ifstream &ifs);
     std::string Import(std::vector<std::string> const &args);
     std::string Export(std::vector<std::string> const &args);
 
-    bool mbModeJson;
+    // bool mbModeJson;
 };
 
 std::string CBoardEx::ImportSequence(std::ifstream &ifs)
@@ -67,6 +69,38 @@ std::string CBoardEx::ImportSequence(std::ifstream &ifs)
 	return ossError.str();
 }
 
+std::string CBoardEx::ImportPlace(std::ifstream &ifs)
+{
+	std::vector<CBrdPPC> ar;
+	std::ostringstream ossError;
+	uint lineNum = 0;
+
+	while(!ifs.eof() && ossError.str().size() == 0)
+	{
+		std::string strLine;
+		std::getline(ifs, strLine);
+
+		lineNum ++;
+		if(strLine.size())
+		{
+			std::transform(strLine.begin(), strLine.end(), strLine.begin(), [](const unsigned char i){ return tolower(i); });
+			CBrdPPC ppc;
+			ossError << ppc.ParsePlace(strLine);
+			if(ossError.str().size() == 0)
+				ar.push_back(ppc);
+		}
+	}
+
+	if(ossError.str().size())
+		ossError << " on line " << lineNum;
+	else if(ar.size())
+		mPlace = ar;
+	else ossError << "No placements imported.";
+	// std::cout << __func__ << " " << __LINE__ << std::endl;
+
+	return ossError.str();
+}
+
 std::string CBoardEx::Import(std::vector<std::string> const &args)
 {
 	std::ostringstream ossError;
@@ -80,9 +114,20 @@ std::string CBoardEx::Import(std::vector<std::string> const &args)
 		{
 			if(sectionName == "sequence")
 				ossError << ImportSequence(ifstr);
+			else if(sectionName == "place")
+				ossError << ImportPlace(ifstr);
+			else
+				ossError << "Error - Import - Invalid secion name. Try;"
+					" sequence, pickup, place, chuck, repeat pickup, repeat place, or extent"
+					;
+
+			if(ossError.str().size() == 0)
+				Update();
 			ifstr.close();
 		}
+		else ossError << "Error - Import - Unable to open file '" << fname << "'";
 	}
+	else ossError << "Error - Import - invalid number of arguments";
 
 	return ossError.str();
 }
@@ -138,17 +183,17 @@ std::string CBoardEx::ImportExport(bool bImport, std::vector<std::string> const 
 {
 	std::ostringstream ossError;
 
-    std::for_each(args.begin(), args.end(), [&](std::string const &arg) mutable
+    std::for_each(args.begin(), args.end(), [&](std::string const &arg)
     {
         std::vector<std::string> strOpArgs;
-        split(arg, "=", [&](std::string const &str) mutable { strOpArgs.push_back(str); });
+        split(arg, "=", [&](std::string const &str) { strOpArgs.push_back(str); });
 
         if(strOpArgs.size() == 2)
         {
             if(bImport)
-                Import(strOpArgs);
+                ossError << Import(strOpArgs);
             else
-                Export(strOpArgs);
+                ossError << Export(strOpArgs);
         }
 		else ossError << "Error - " << (bImport ? "Import" : "Export")
 			<< " - Invalid number of arguments. Try [section name]=[file name]";
@@ -184,17 +229,16 @@ std::string CBoardEx::SectionDump(std::string sectionName)
 
 int main(int argc, char **argv)
 {
-    CAppArg args(argc, argv);
-
-    //std::cout << args.Dump() << std::endl;
-
-    std::string strCmd;
-    std::vector<std::string> strCmdArgs;
+    CAppArg cliargs(argc, argv);
     CBoardEx board;
-    args.forEach([&](std::string const &key, std::string const &val) mutable
+
+    cliargs.forEach([&](std::string const &key, std::string const &val)
     {
 		std::string action = key;
+	    std::vector<std::string> vals;
 		std::transform(action.begin(), action.end(), action.begin(), [](const unsigned char i){ return tolower(i); });
+		split(val, "     ", [&](std::string const &v) { vals.push_back(v); });
+
         // std::cout << "key: " << key << ", val: " << val << std::endl;
         if(action == "read")
         {
@@ -219,10 +263,8 @@ int main(int argc, char **argv)
         }
         else if(action == "export" || action == "import")
         {
-            strCmd = key;
-            split(val, "     ", [&](std::string const &valarg) mutable { strCmdArgs.push_back(valarg); });
 
-            std::string strError = board.ImportExport(action == "import", strCmdArgs);
+            std::string strError = board.ImportExport(action == "import", vals);
 			if(strError.size())
 				std::cerr << strError << std::endl;
         }
@@ -230,8 +272,30 @@ int main(int argc, char **argv)
         {
             std::cout << board.SectionDump(val);
         }
-        else if(action == "json")
-            board.ModeJson();
+		// --bom pickup=bom.pu place=bom.pl sequence=brd.seq
+		else if(action == "bom")
+		{
+			CBom bom;
+			std::map<std::string, std::string> mapArgs;
+
+			std::for_each(vals.begin(), vals.end(), [&](std::string const &v)
+			{
+				std::vector<std::string> ar;
+				split(v, "=", [&](std::string const &item){ ar.push_back(item); });
+				std::string k = ar[0];
+				std::transform(k.begin(), k.end(), k.begin(), [](const unsigned char i){ return tolower(i); });
+				mapArgs[k] = ar[1];
+			});
+
+			if(mapArgs.find("pickup") != mapArgs.end())
+				bom.ImportPickup(mapArgs["pickup"]);
+			if(mapArgs.find("place") != mapArgs.end())
+				bom.ImportPlace(mapArgs["place"]);
+			if(mapArgs.find("sequence") != mapArgs.end())
+				bom.ExportPickup(mapArgs["sequence"]);
+		}
+        // else if(action == "json")
+        //     board.ModeJson();
     });
 
     return 0;

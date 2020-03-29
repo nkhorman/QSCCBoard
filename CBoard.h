@@ -256,6 +256,8 @@ typedef struct __attribute__((packed)) _brd_place_repeat_t
 #include <fstream>
 #include <vector>
 
+#include "CBrdLoc.h"
+
 class CBrdInfo
 {
 public:
@@ -342,36 +344,6 @@ protected:
 	std::vector<uint> mParam;
 };
 
-class CBrdLoc
-{
-public:
-	CBrdLoc()
-		: mX(0)
-		, mY(0)
-		, mZ(0)
-		, mT(0)
-		{};
-	CBrdLoc(uint x, uint y, uint z, uint t)
-		: mX(x)
-		, mY(y)
-		, mZ(z)
-		, mT(t)
-		{};
-	virtual ~CBrdLoc() {};
-
-	inline uint x() const { return mX; };
-	inline uint y() const { return mY; };
-	inline uint z() const { return mZ; };
-	inline uint t() const { return mT; };
-
-	std::string Dump() const;
-protected:
-	uint mX;
-	uint mY;
-	uint mZ;
-	uint mT;
-};
-
 class CBrdPPC
 {
 public:
@@ -400,6 +372,7 @@ public:
 	inline CBrdLoc const &Loc() const { return mLoc; };
 
 	std::string Dump() const;
+	std::string ParsePlace(std::string str);
 
 protected:
 	uint mAltIndex;

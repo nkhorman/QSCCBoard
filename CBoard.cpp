@@ -404,6 +404,22 @@ std::string CBrdLoc::Dump() const
 	return oss.str();
 }
 
+void CBrdLoc::Parse(std::string const &k, std::string const &v)
+{
+	if(k == "x") x(std::atoi(v.c_str()));
+	else if(k == "y") y(std::atoi(v.c_str()));
+	else if(k == "z") z(std::atoi(v.c_str()));
+	else if(k == "t") t(std::atoi(v.c_str()));
+}
+
+void CBrdLoc::Parse(std::string const &kvp)
+{
+	std::vector<std::string> ar;
+	split(kvp, "=:", [&](std::string const &item) { ar.push_back(item); });
+
+	Parse(ar[0], ar[1]);
+}
+
 // **
 std::istream &operator>>(std::istream &stream, CBrdPPC &ppc)
 {
@@ -456,6 +472,44 @@ std::string CBrdPPC::Dump() const
 	oss << mLoc.Dump();
 
 	return oss.str();
+}
+
+std::string CBrdPPC::ParsePlace(std::string str)
+{
+	std::ostringstream ossError;
+
+	// std::cout << __func__ << " " << __LINE__ << " - '" << str << "'" << std::endl;
+	// remove white space
+	str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
+	str.erase(std::remove(str.begin(), str.end(), '\t'), str.end());
+
+	// split into key value pairs
+	std::vector<std::string> kvps;
+	split(str, ",", [&](std::string const &kvp) { kvps.push_back(kvp); });
+
+	// process kvps
+	for(std::vector<std::string>::const_iterator it= kvps.begin();
+		it != kvps.end() && ossError.str().size() == 0;
+		it++)
+	{
+		// split kvp
+		std::vector<std::string> ar;
+		split(*it, "=:", [&](std::string const &item) { ar.push_back(item); });
+
+		if(ar.size() == 2)
+		{
+			std::string k = ar[0];
+			std::string v = ar[1];
+
+			if(k == "extent") { mExtent = std::atoi(v.c_str()); }
+			else if(k == "x" || k == "y" || k == "z" || k == "t") { mLoc.Parse(k, v); }
+			else if(k == "next" || k == "altindex") { mAltIndex = std::atoi(v.c_str()); }
+			else ossError << "Invalid field name '" << k << "'";
+		}
+		else ossError << "Invalid field set '" << *it << "'";
+	};
+
+	return ossError.str();
 }
 
 // **
@@ -712,13 +766,13 @@ std::ostream &operator<<(std::ostream &stream, CBoard &brd)
 {
 	brd.Update();
 	stream << brd.Info();
-	std::for_each(brd.Seq().begin(), brd.Seq().end(), [&](CBrdSeq const &item) mutable { stream << item; });
-	std::for_each(brd.Pickup().begin(), brd.Pickup().end(), [&](CBrdPPC const &item) mutable { stream << item; });
-	std::for_each(brd.Place().begin(), brd.Place().end(), [&](CBrdPPC const &item) mutable { stream << item; });
-	std::for_each(brd.Chuck().begin(), brd.Chuck().end(), [&](CBrdPPC const &item) mutable { stream << item; });
-	std::for_each(brd.RepeatPickup().begin(), brd.RepeatPickup().end(), [&](CBrdRepeatPlace const &item) mutable { stream << item; });
-	std::for_each(brd.RepeatPlace().begin(), brd.RepeatPlace().end(), [&](CBrdRepeatPlace const &item) mutable { stream << item; });
-	std::for_each(brd.Extent().begin(), brd.Extent().end(), [&](CBrdExtent const &item) mutable { stream << item; });
+	std::for_each(brd.Seq().begin(), brd.Seq().end(), [&](CBrdSeq const &item) { stream << item; });
+	std::for_each(brd.Pickup().begin(), brd.Pickup().end(), [&](CBrdPPC const &item) { stream << item; });
+	std::for_each(brd.Place().begin(), brd.Place().end(), [&](CBrdPPC const &item) { stream << item; });
+	std::for_each(brd.Chuck().begin(), brd.Chuck().end(), [&](CBrdPPC const &item) { stream << item; });
+	std::for_each(brd.RepeatPickup().begin(), brd.RepeatPickup().end(), [&](CBrdRepeatPlace const &item) { stream << item; });
+	std::for_each(brd.RepeatPlace().begin(), brd.RepeatPlace().end(), [&](CBrdRepeatPlace const &item) { stream << item; });
+	std::for_each(brd.Extent().begin(), brd.Extent().end(), [&](CBrdExtent const &item) { stream << item; });
 
 	return stream;
 };

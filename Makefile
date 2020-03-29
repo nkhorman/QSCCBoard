@@ -1,7 +1,7 @@
 PROG=		qsccboard
 
 SRCSC=		
-SRCSCPP=	main.cpp CBoard.cpp stdStringSplit.cpp
+SRCSCPP=	main.cpp CBoard.cpp stdStringSplit.cpp CBom.cpp
 SRCS=		${SRCSC} ${SRCSCPP}
 
 OBJSC=		${SRCSC:.c=.o}
@@ -9,7 +9,10 @@ OBJSCPP=	${SRCSCPP:.cpp=.o}
 OBJS=		${OBJSC} ${OBJSCPP}
 
 INCLUDESC=	${SRCSC:.c=.h}
+
 INCLUDESCPP=	${SRCSCPP:.cpp=.h}
+INCLUDESCPP+=	CBrdLoc.h CAppArg.h
+
 INCLUDES=	${INCLUDESC} ${INCLUDESCPP}
 
 INCLUDEDIR=	-I.
