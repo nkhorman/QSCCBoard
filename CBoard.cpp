@@ -150,12 +150,12 @@ std::string CBrdSeq::Parse(std::string str)
 	{
 		mCmd = 1;
 		uint param1 = std::atoi(strs[1].c_str());
-		uint param3 = (strs.size() == 4 && strs[2] == "lead" && strs[3] == "inspection" ? 223 : 0);
+		uint param3 = (strs.size() == 4 && strs[2] == "lead" && strs[3] == "inspection" ? 223 : 255);
 		mParam.clear();
 		mParam.push_back(param1);
-		mParam.push_back(0);
+		mParam.push_back(255);
 		mParam.push_back(param3);
-		if(strs.size() > 2 && param3 == 0)
+		if(strs.size() > 2 && param3 == 255)
 			invalidQualifier = 1;
 	}
 	else if(strs.size() >= 2 && strs[0] == "place")
@@ -170,7 +170,7 @@ std::string CBrdSeq::Parse(std::string str)
 		mParam.clear();
 		mParam.push_back(param1);
 		mParam.push_back(param2);
-		mParam.push_back(0);
+		mParam.push_back(255);
 		if(param2 == 255 && strs.size() > 2)
 			invalidQualifier = 2;
 	}
