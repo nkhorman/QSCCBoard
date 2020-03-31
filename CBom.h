@@ -1,7 +1,9 @@
 #ifndef _CBOM_H_
 
 #include <string>
+#include <vector>
 #include <map>
+#include <utility>
 #include <functional>
 
 #include "CBrdLoc.h"
@@ -26,7 +28,7 @@ public:
 			std::for_each(mParts.begin(), mParts.end(), [&](std::string const &item) { fn(item); });
 	}
 
-	std::string Parse(std::string const &str);
+	std::string Parse(std::string const &str, std::function<void(std::string const &)> fn);
 	std::string Export(uint &lastChuckNum, uint &lastItemNum, uint pickupNum) const;
 protected:
 	uint mNum; // pickup number
@@ -70,6 +72,9 @@ public:
 protected:
 
 	std::vector<CBomPickup> mPickup;
-	std::vector<CBomPlace> mPlace;
+	// std::map<std::string, uint>mPartPlaceNum;
+	std::vector<std::string> mPartPlaceName;
+	std::map<std::string, std::pair<uint, uint>> mPartPickupPlaceNum;
+	std::map<std::string, CBomPlace> mPlace;
 };
 #endif

@@ -9,7 +9,7 @@
 #include "stdStringSplit.h"
 
 // **
-std::string CBomPickup::Parse(std::string const &str)
+std::string CBomPickup::Parse(std::string const &str, std::function<void(std::string const &)> fn)
 {
 	std::ostringstream ossError;
 	std::vector<std::string> cols;
@@ -24,7 +24,7 @@ std::string CBomPickup::Parse(std::string const &str)
 			std::string strParts(cols[2]);
 
 			strParts.erase(std::remove(strParts.begin(), strParts.end(), ' '), strParts.end());
-			split(cols[2],  ",", [&](std::string const &item) { arParts.push_back(item); });
+			split(cols[2],  ",", [&](std::string const &item) { arParts.push_back(item); if(fn) fn(item); });
 			
 			mNum = std::atoi(cols[0].c_str());
 			mChuck = std::atoi(cols[1].c_str());
@@ -112,6 +112,8 @@ std::string CBom::ImportPickup(std::string fname)
 	if(ifs.is_open())
 	{
 		uint lineNum = 0;
+		uint partNum = 0;
+		uint pickupNum = 0;
 
 		while(!ifs.eof() && ossError.str().size() == 0)
 		{
@@ -121,13 +123,20 @@ std::string CBom::ImportPickup(std::string fname)
 			lineNum ++;
 			if(strLine.size())
 			{
-				std::transform(strLine.begin(), strLine.end(), strLine.begin(), [](const unsigned char i){ return tolower(i); });
+				pickupNum++;
+				std::transform(strLine.begin(), strLine.end(), strLine.begin(),
+					[](const unsigned char i){ return tolower(i); });
 				CBomPickup pickup;
-				ossError << pickup.Parse(strLine);
+				ossError << pickup.Parse(strLine, [&](std::string const &partName)
+				{
+					mPartPlaceName.push_back(partName);
+					mPartPickupPlaceNum[partName] = std::pair<uint,uint>(pickupNum, ++partNum);
+				});
 				if(ossError.str().size() == 0)
 					ar.push_back(pickup);
 			}
 		}
+		ifs.close();
 
 		if(ossError.str().size())
 			ossError << " on line " << lineNum;
@@ -135,7 +144,6 @@ std::string CBom::ImportPickup(std::string fname)
 			mPickup = ar;
 		else ossError << "No pickups imported.";
 		// std::cout << __func__ << " " << __LINE__ << std::endl;
-		ifs.close();
 	}
 	else ossError << "Error - Pickup - Unable to open file '" << fname << "'";
 
@@ -169,7 +177,7 @@ std::string CBom::ImportPlace(std::string fname, CBrdLoc const &home)
 {
 	std::ostringstream ossError;
 	std::ifstream ifs(fname.c_str(), std::ifstream::in);
-	std::vector<CBomPlace> places;
+	std::map<std::string, CBomPlace> places;
 
 	if(ifs.is_open())
 	{
@@ -187,7 +195,7 @@ std::string CBom::ImportPlace(std::string fname, CBrdLoc const &home)
 				CBomPlace place(home);
 				ossError << place.Parse(strLine);
 				if(ossError.str().size() == 0)
-					places.push_back(place);
+					places[place.Name()] = place;
 			}
 		}
 
@@ -211,8 +219,14 @@ std::string CBom::ExportPlace(std::string fname)
 
 	if(ofs.is_open())
 	{
-		std::for_each(mPlace.begin(), mPlace.end(), [&](CBomPlace const &item)
-			{ ofs << item.Export() << std::endl; });
+		// std::for_each(mPlace.begin(), mPlace.end(), [&](CBomPlace const &item)
+		// 	{ ofs << item.Export() << std::endl; });
+
+		std::for_each(mPartPlaceName.begin(), mPartPlaceName.end(), [&](std::string const &name)
+		{
+			// ofs << "# " << name << std::endl;
+			ofs << mPlace[name].Export() << std::endl;
+		});
 		ofs.flush();
 		ofs.clear();
 	}
