@@ -64,6 +64,45 @@ std::string CBomPickup::Export(uint &lastChuckNum, uint &lastItemNum, uint picku
 }
 
 // **
+std::string CBomPlace::Parse(std::string const &str)
+{
+	std::ostringstream ossError;
+	std::vector<std::string> cols;
+
+	split(str, "	", [&](std::string const &item){ cols.push_back(item); });
+
+	if(cols.size() >= 4 && cols.size() <= 5)
+	{
+		if(cols[0].size() && cols[1].size() && cols[2].size() && cols[3].size())
+		{
+			mName = cols[0];
+
+			// Extract board datum relative part place location and convert it to machine coordinates
+			// Important note - this auto-rotates the board 90 degrees CW
+			//	Board datum is presumed to be lower left corner = 0,0
+			//	Machine datum is lower right corner = X=23460, y=6790 for a Quad IIc,115 workbox
+			uint y = std::atoi(cols[1].c_str()); // board x -> machine y
+			uint x = std::atoi(cols[2].c_str()); // board y -> machine x
+			float t = 66.666666666666667 * std::atoi(cols[3].c_str()); // board rotation -> machine theta
+			uint z = (cols.size() == 5 ? std::atoi(cols[4].c_str()) : 0); // board surface -> machine z
+
+			mLoc = CBrdLoc(x, y, z, (uint)t);
+			mLoc.Offset(mMachineHome); // this is the datum offset operation
+		}
+		else ossError << "Error - Place - one or more empty columns";
+	}
+	else ossError << "Error - Place - invalid number of Tab separated columns";
+
+	return ossError.str();
+}
+
+std::string CBomPlace::Export() const
+{
+		// std::cout << __func__ << " " << __LINE__ << " - " << mLoc.Dump() << std::endl;
+	return mLoc.Dump();
+}
+
+// **
 std::string CBom::ImportPickup(std::string fname)
 {
 	std::ostringstream ossError;
@@ -113,7 +152,7 @@ std::string CBom::ExportPickup(std::string fname)
 		uint lastChuckNum = 0;
 		uint lastItemNum = 0;
 		uint pickupNum = 1;
-		std::for_each(mPickup.begin(), mPickup.end(), [&](CBomPickup const &item) mutable
+		std::for_each(mPickup.begin(), mPickup.end(), [&](CBomPickup const &item)
 		{
 			ofs << item.Export(lastChuckNum, lastItemNum, pickupNum++);
 		});
@@ -121,15 +160,16 @@ std::string CBom::ExportPickup(std::string fname)
 		ofs.flush();
 		ofs.clear();
 	}
-	else ossError << "Error - Place - Unable to open file '" << fname << "'";
+	else ossError << "Error - Pickup - Unable to open file '" << fname << "'";
 
 	return ossError.str();
 }
 
-std::string CBom::ImportPlace(std::string fname)
+std::string CBom::ImportPlace(std::string fname, CBrdLoc const &home)
 {
 	std::ostringstream ossError;
 	std::ifstream ifs(fname.c_str(), std::ifstream::in);
+	std::vector<CBomPlace> places;
 
 	if(ifs.is_open())
 	{
@@ -144,20 +184,37 @@ std::string CBom::ImportPlace(std::string fname)
 			if(strLine.size())
 			{
 				std::transform(strLine.begin(), strLine.end(), strLine.begin(), [](const unsigned char i){ return tolower(i); });
-				// CBrdPPC ppc;
-				// ossError << ppc.ParsePlace(strLine);
-				// if(ossError.str().size() == 0)
-				// 	ar.push_back(ppc);
+				CBomPlace place(home);
+				ossError << place.Parse(strLine);
+				if(ossError.str().size() == 0)
+					places.push_back(place);
 			}
 		}
 
 		if(ossError.str().size())
 			ossError << " on line " << lineNum;
-		// else if(ar.size())
-		// 	mPlace = ar;
+		else if(places.size())
+			mPlace = places;
 		else ossError << "No placements imported.";
 		// std::cout << __func__ << " " << __LINE__ << std::endl;
 		ifs.close();
+	}
+	else ossError << "Error - Place - Unable to open file '" << fname << "'";
+
+	return ossError.str();
+}
+
+std::string CBom::ExportPlace(std::string fname)
+{
+	std::ostringstream ossError;
+	std::ofstream ofs(fname.c_str(), std::ofstream::out | std::ofstream::trunc);
+
+	if(ofs.is_open())
+	{
+		std::for_each(mPlace.begin(), mPlace.end(), [&](CBomPlace const &item)
+			{ ofs << item.Export() << std::endl; });
+		ofs.flush();
+		ofs.clear();
 	}
 	else ossError << "Error - Place - Unable to open file '" << fname << "'";
 

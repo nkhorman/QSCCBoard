@@ -290,9 +290,27 @@ int main(int argc, char **argv)
 			if(mapArgs.find("pickup") != mapArgs.end())
 				bom.ImportPickup(mapArgs["pickup"]);
 			if(mapArgs.find("place") != mapArgs.end())
-				bom.ImportPlace(mapArgs["place"]);
+			{
+				uint width = (mapArgs.find("width") != mapArgs.end()
+					? std::atoi(mapArgs["width"].c_str())
+					: 0);
+				CBrdLoc machineHome;
+				if(mapArgs.find("home") != mapArgs.end())
+				{
+					// expecting... "x:1,y:2,z:3", split them at ',' and then parse them
+					std::vector<std::string> arHome;
+					split(mapArgs["home"], ",", [&](std::string const &item){ arHome.push_back(item); });
+					std::for_each(arHome.begin(), arHome.end(), [&](std::string const &item)
+						{ machineHome.Parse(item); });
+				}
+				if(width && machineHome.y())
+					machineHome.y(machineHome.y() + width);
+				bom.ImportPlace(mapArgs["place"], machineHome);
+			}
 			if(mapArgs.find("sequence") != mapArgs.end())
 				bom.ExportPickup(mapArgs["sequence"]);
+			if(mapArgs.find("placeout") != mapArgs.end())
+				bom.ExportPlace(mapArgs["placeout"]);
 		}
         // else if(action == "json")
         //     board.ModeJson();

@@ -420,6 +420,17 @@ void CBrdLoc::Parse(std::string const &kvp)
 	Parse(ar[0], ar[1]);
 }
 
+void CBrdLoc::Offset(CBrdLoc const &offset)
+{
+	if(offset.x())
+		mX = offset.x() - mX;
+	if(offset.y())
+		mY = offset.y() - mY;
+	if(offset.z())
+		mZ = offset.z() - mZ;
+	// TODO - rotation.... hmmm...
+}
+
 // **
 std::istream &operator>>(std::istream &stream, CBrdPPC &ppc)
 {

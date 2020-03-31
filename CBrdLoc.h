@@ -38,6 +38,8 @@ public:
 	inline uint t() const { return mT; };
 	inline void t(uint v) { mT = v; };
 
+	void Offset(CBrdLoc const &offset);
+
 	std::string Dump() const;
 protected:
 	uint mX;

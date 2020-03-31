@@ -6,15 +6,6 @@
 
 #include "CBrdLoc.h"
 
-class CBomPlace
-{
-public:
-	CBomPlace() {};
-	virtual ~CBomPlace() {};
-protected:
-	CBrdLoc mLoc;
-};
-
 class CBomPickup
 {
 public:
@@ -43,6 +34,27 @@ protected:
 	std::vector<std::string> mParts;
 };
 
+class CBomPlace
+{
+public:
+	CBomPlace() {};
+	CBomPlace(CBrdLoc home)
+		: mMachineHome(home)
+		{};
+	virtual ~CBomPlace() {};
+
+	inline std::string Name() const { return mName; };
+	inline void Name(std::string v) { mName = v; };
+
+	std::string Parse(std::string const &str);
+	std::string Export() const;
+
+protected:
+	std::string mName;
+	CBrdLoc mLoc;
+	CBrdLoc mMachineHome;
+};
+
 class CBom
 {
 public:
@@ -52,10 +64,12 @@ public:
 	std::string ImportPickup(std::string fname);
 	std::string ExportPickup(std::string fname);
 
-	std::string ImportPlace(std::string fname);
+	std::string ImportPlace(std::string fname, CBrdLoc const &home);
+	std::string ExportPlace(std::string fname);
+
 protected:
 
 	std::vector<CBomPickup> mPickup;
-	std::map<std::string, CBomPlace> mPlace;
+	std::vector<CBomPlace> mPlace;
 };
 #endif
