@@ -20,6 +20,9 @@ public:
 	inline uint Chuck() const { return mChuck; };
 	inline void Chuck(uint v) { mChuck = v; };
 
+	inline std::string Description() const { return mDescription; };
+	inline void Description(std::string v) { mDescription = v; };
+
 	inline void Part(std::string const &v) { mParts.push_back(v); };
 	// inline std::vector<std::string> const &Parts() const { return mParts; };
 	inline void Parts(std::function<void(std::string const &)> fn)
@@ -33,6 +36,8 @@ public:
 protected:
 	uint mNum; // pickup number
 	uint mChuck;
+	CBrdLoc mSize;
+	std::string mDescription;
 	std::vector<std::string> mParts;
 };
 
@@ -67,7 +72,7 @@ public:
 	std::string ExportPickup(std::string fname);
 
 	std::string ImportPlace(std::string fname, CBrdLoc const &home);
-	std::string ExportPlace(std::string fname);
+	std::string ExportPlace(std::string fname, std::string fnameRef);
 
 protected:
 

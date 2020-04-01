@@ -287,9 +287,11 @@ int main(int argc, char **argv)
 				mapArgs[k] = ar[1];
 			});
 
+			std::ostringstream ossError;
+
 			if(mapArgs.find("pickup") != mapArgs.end())
-				bom.ImportPickup(mapArgs["pickup"]);
-			if(mapArgs.find("place") != mapArgs.end())
+				ossError << bom.ImportPickup(mapArgs["pickup"]);
+			if(ossError.str().size() == 0 && mapArgs.find("place") != mapArgs.end())
 			{
 				uint width = (mapArgs.find("width") != mapArgs.end()
 					? std::atoi(mapArgs["width"].c_str())
@@ -305,12 +307,15 @@ int main(int argc, char **argv)
 				}
 				if(width && machineHome.y())
 					machineHome.y(machineHome.y() + width);
-				bom.ImportPlace(mapArgs["place"], machineHome);
+				ossError << bom.ImportPlace(mapArgs["place"], machineHome);
 			}
-			if(mapArgs.find("sequence") != mapArgs.end())
-				bom.ExportPickup(mapArgs["sequence"]);
-			if(mapArgs.find("placeout") != mapArgs.end())
-				bom.ExportPlace(mapArgs["placeout"]);
+			if(ossError.str().size() == 0 && mapArgs.find("sequence") != mapArgs.end())
+				ossError << bom.ExportPickup(mapArgs["sequence"]);
+			if(ossError.str().size() == 0 && mapArgs.find("placeout") != mapArgs.end())
+				ossError << bom.ExportPlace(mapArgs["placeout"], mapArgs["placerefout"]);
+
+			if(ossError.str().c_str())
+				std::cerr << ossError.str() << std::endl;
 		}
         // else if(action == "json")
         //     board.ModeJson();
