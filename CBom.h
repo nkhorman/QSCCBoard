@@ -69,7 +69,7 @@ public:
 	virtual ~CBom() {};
 
 	std::string ImportPickup(std::string fname);
-	std::string ExportPickup(std::string fname);
+	std::string ExportPickup(std::string fname, std::string fnameRef);
 
 	std::string ImportPlace(std::string fname, CBrdLoc const &home);
 	std::string ExportPlace(std::string fname, std::string fnameRef);

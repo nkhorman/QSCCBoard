@@ -1,7 +1,7 @@
 PROG=		qsccboard
 
 SRCSC=		
-SRCSCPP=	main.cpp CBoard.cpp stdStringSplit.cpp CBom.cpp
+SRCSCPP=	main.cpp CBoard.cpp stdStringSplit.cpp CBom.cpp CFid.cpp
 SRCS=		${SRCSC} ${SRCSCPP}
 
 OBJSC=		${SRCSC:.c=.o}

@@ -109,34 +109,6 @@ std::string CBomPlace::Export() const
 	return mLoc.Dump();
 }
 
-static std::string stringTrim(std::string str, std::string commentChars)
-{
-	std::string newstr(str);
-
-	if(str.length())
-	{
-		// skip leading white space
-		// truncate trailing comments
-		size_t pos_l = str.find_first_not_of(" \t\r\n", 0);
-		if(pos_l == std::string::npos)
-			pos_l = 0;
-		size_t pos_r = str.find_first_of(commentChars, pos_l);
-
-		if(pos_l == 0 && pos_r == 0)
-			newstr = "";
-		else
-		{
-			if(pos_r == std::string::npos)
-				pos_r = str.length();
-			// truncate trailing white space
-			pos_r = str.find_last_not_of(" \t\r\n", pos_r - 1) + 1;
-			newstr = str.substr(pos_l, pos_r - pos_l);
-		}
-	}
-
-	return newstr;
-}
-
 // **
 std::string CBom::ImportPickup(std::string fname)
 {
@@ -187,10 +159,11 @@ std::string CBom::ImportPickup(std::string fname)
 	return ossError.str();
 }
 
-std::string CBom::ExportPickup(std::string fname)
+std::string CBom::ExportPickup(std::string fname, std::string fnameRef)
 {
 	std::ostringstream ossError;
 	std::ofstream ofs(fname.c_str(), std::ofstream::out | std::ofstream::trunc);
+	std::ofstream ofsRef(fnameRef.c_str(), std::ofstream::out | std::ofstream::trunc);
 
 	if(ofs.is_open())
 	{
@@ -200,10 +173,22 @@ std::string CBom::ExportPickup(std::string fname)
 		std::for_each(mPickup.begin(), mPickup.end(), [&](CBomPickup const &item)
 		{
 			ofs << item.Export(lastChuckNum, lastItemNum, pickupNum++);
+			if(ofsRef.is_open())
+			{
+				std::string pickupDescription = item.Description();
+				addWhiteSpcs(pickupDescription, 25);
+				ofsRef << std::setfill('0') << std::setw(3) << item.Num() << " "
+					<< pickupDescription << "\r\n"; // dos file, needs CR
+			}
 		});
 		ofs << "chuck 0" << std::endl << "goto 0" << std::endl;
 		ofs.flush();
 		ofs.clear();
+		if(ofsRef.is_open())
+		{
+			ofsRef.flush();
+			ofsRef.close();
+		}
 	}
 	else ossError << "Error - Pickup - Unable to open file '" << fname << "'";
 
@@ -254,12 +239,6 @@ std::string CBom::ImportPlace(std::string fname, CBrdLoc const &home)
 	return ossError.str();
 }
 
-static void addWhiteSpcs(std::string &str, size_t maxLength)
-{
-    for(size_t i=str.length(); i<maxLength; i++)
-	    str += " ";
-}
-
 std::string CBom::ExportPlace(std::string fname, std::string fnameRef)
 {
 	std::ostringstream ossError;
@@ -279,7 +258,7 @@ std::string CBom::ExportPlace(std::string fname, std::string fnameRef)
 				uint placeNum = mPartPickupPlaceNum[name].second;
 				std::string pickupDescription = mPickup[pickupNum-1].Description();
 				std::string placeDescription = mPlace[name].Name();
-				addWhiteSpcs(pickupDescription, 26);
+				addWhiteSpcs(pickupDescription, 25);
 				addWhiteSpcs(placeDescription, 10);
 				ofsRef << std::setfill('0') << std::setw(3) << placeNum << " " << pickupDescription << placeDescription << "\r\n"; // dos file, needs CR
 			}

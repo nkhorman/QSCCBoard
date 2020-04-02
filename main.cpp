@@ -15,6 +15,7 @@
 #include "CAppArg.h"
 #include "stdStringSplit.h"
 #include "CBom.h"
+#include "CFid.h"
 
 class CBoardEx : public CBoard
 {
@@ -310,9 +311,44 @@ int main(int argc, char **argv)
 				ossError << bom.ImportPlace(mapArgs["place"], machineHome);
 			}
 			if(ossError.str().size() == 0 && mapArgs.find("sequence") != mapArgs.end())
-				ossError << bom.ExportPickup(mapArgs["sequence"]);
+				ossError << bom.ExportPickup(mapArgs["sequence"], mapArgs["pickuprefout"]);
 			if(ossError.str().size() == 0 && mapArgs.find("placeout") != mapArgs.end())
 				ossError << bom.ExportPlace(mapArgs["placeout"], mapArgs["placerefout"]);
+
+			if(ossError.str().c_str())
+				std::cerr << ossError.str() << std::endl;
+		}
+		else if(action == "fid")
+		{
+			std::map<std::string, std::string> mapArgs;
+
+			std::for_each(vals.begin(), vals.end(), [&](std::string const &v)
+			{
+				std::vector<std::string> ar;
+				split(v, "=", [&](std::string const &item){ ar.push_back(item); });
+				std::string k = ar[0];
+				std::transform(k.begin(), k.end(), k.begin(), [](const unsigned char i){ return tolower(i); });
+				mapArgs[k] = ar[1];
+			});
+
+			std::ostringstream ossError;
+			CBrdLoc machineHome;
+
+			if(mapArgs.find("home") != mapArgs.end())
+			{
+				// expecting... "x:1,y:2,z:3", split them at ',' and then parse them
+				std::vector<std::string> arHome;
+				split(mapArgs["home"], ",", [&](std::string const &item){ arHome.push_back(item); });
+				std::for_each(arHome.begin(), arHome.end(), [&](std::string const &item)
+					{ machineHome.Parse(item); });
+			}
+
+			CFiducial fid(machineHome);
+
+			if(mapArgs.find("in") != mapArgs.end())
+				ossError << fid.Import(mapArgs["in"]);
+			if(ossError.str().size() == 0 && mapArgs.find("out") != mapArgs.end())
+				ossError << fid.Export(mapArgs["out"]);
 
 			if(ossError.str().c_str())
 				std::cerr << ossError.str() << std::endl;
