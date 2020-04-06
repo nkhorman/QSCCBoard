@@ -33,6 +33,10 @@ public:
 
 	std::string Parse(std::string const &str, std::function<void(std::string const &)> fn);
 	std::string Export(uint &lastChuckNum, uint &lastItemNum, uint pickupNum) const;
+
+	std::string Dump();
+
+	inline CBrdLoc const &Size() const { return mSize; };
 protected:
 	uint mNum; // pickup number
 	uint mChuck;
@@ -56,10 +60,43 @@ public:
 	std::string Parse(std::string const &str);
 	std::string Export() const;
 
+	inline CBrdLoc &Loc() { return mLoc; };
+
 protected:
 	std::string mName;
 	CBrdLoc mLoc;
 	CBrdLoc mMachineHome;
+};
+
+class CBomChuck
+{
+public:
+	CBomChuck()
+		: mNum(0)
+		, mHeight(0)
+		{};
+	virtual ~CBomChuck() {};
+
+	inline uint Num() const { return mNum; };
+	inline void Num(uint v) { mNum = v; };
+
+	inline std::string Name() const { return mName; };
+	inline void Name(std::string v) { mName = v; };
+
+	inline uint Height() const { return mHeight; };
+	inline void Height(uint v) { mHeight = v; };
+
+	inline CBrdLoc const &Loc() const { return mLoc; };
+	inline void Loc(CBrdLoc v) { mLoc = v; };
+
+	std::string Parse(std::string const &str);
+	std::string Export() const;
+protected:
+	uint mNum;
+	std::string mName;
+	std::string mIdOd;
+	uint mHeight;
+	CBrdLoc mLoc;
 };
 
 class CBom
@@ -74,6 +111,8 @@ public:
 	std::string ImportPlace(std::string fname, CBrdLoc const &home);
 	std::string ExportPlace(std::string fname, std::string fnameRef);
 
+	std::string ImportChuck(std::string fname);
+
 protected:
 
 	std::vector<CBomPickup> mPickup;
@@ -81,5 +120,6 @@ protected:
 	std::vector<std::string> mPartPlaceName;
 	std::map<std::string, std::pair<uint, uint>> mPartPickupPlaceNum;
 	std::map<std::string, CBomPlace> mPlace;
+	std::vector<CBomChuck> mChuck;
 };
 #endif

@@ -70,6 +70,18 @@ std::string CBomPickup::Export(uint &lastChuckNum, uint &lastItemNum, uint picku
 	return oss.str();
 }
 
+std::string CBomPickup::Dump()
+{
+	std::ostringstream oss;
+
+	oss
+		<< "Num: " << mNum
+		<< ", Chuck: " << mChuck
+		<< " Size: " << mSize.Dump()
+		<< " Description: " << mDescription;
+
+	return oss.str();
+}
 // **
 std::string CBomPlace::Parse(std::string const &str)
 {
@@ -104,6 +116,54 @@ std::string CBomPlace::Parse(std::string const &str)
 }
 
 std::string CBomPlace::Export() const
+{
+		// std::cout << __func__ << " " << __LINE__ << " - " << mLoc.Dump() << std::endl;
+	return mLoc.Dump();
+}
+
+// **
+// # chuck	name	id/od	height	x	y	z	t
+// 1	xf	30/18	565	5020	5729	1283	0
+// 2	xg	40/28	565	5019	5038	1259	0
+// 3	xh	55/39	565	5022	4222	1248	0
+// 4	bas	245/75	560	6555	5724	1247	0
+// 5	aa	161/95	564	6559	5035	1259	0
+// 6	vn	428	565	6557	4227	1258	0
+
+std::string CBomChuck::Parse(std::string const &str)
+{
+	std::ostringstream ossError;
+	std::vector<std::string> cols;
+
+	split(str, "	", [&](std::string const &item){ cols.push_back(item); });
+
+	if(cols.size() == 8)
+	{
+		if(
+			cols[0].size() && cols[1].size() && cols[2].size() && cols[3].size()
+			&& cols[4].size() && cols[5].size() && cols[6].size() && cols[7].size()
+		)
+		{
+			mNum = std::atoi(cols[0].c_str());
+			mName = cols[1];
+			mIdOd = cols[2];
+			mHeight = std::atoi(cols[3].c_str());
+
+			mLoc = CBrdLoc(
+				std::atoi(cols[4].c_str())
+				, std::atoi(cols[5].c_str())
+				, std::atoi(cols[6].c_str())
+				, std::atoi(cols[7].c_str())
+				);
+		}
+		else ossError << "Error - Chuck - one or more empty columns";
+	}
+	else ossError << "Error - Chuck - invalid number of Tab separated columns";
+
+	return ossError.str();
+}
+
+std::string CBomChuck::Export() const
 {
 		// std::cout << __func__ << " " << __LINE__ << " - " << mLoc.Dump() << std::endl;
 	return mLoc.Dump();
@@ -250,17 +310,37 @@ std::string CBom::ExportPlace(std::string fname, std::string fnameRef)
 		// std::cout << __func__ << ": " << __LINE__ << std::endl;
 		std::for_each(mPartPlaceName.begin(), mPartPlaceName.end(), [&](std::string const &name)
 		{
-			// ofs << "# " << name << std::endl;
-			ofs << mPlace[name].Export() << std::endl;
+			uint pickupNum = mPartPickupPlaceNum[name].first;
+			CBomPickup pickup = mPickup[pickupNum-1];
+			CBomPlace place = mPlace[name];
+			CBomChuck chuck = (mChuck.size() > pickup.Chuck()-1 ? mChuck[pickup.Chuck()-1] : CBomChuck());
+
+			// Compute the placement z
+			// based on;
+			//	"board height", which is the floor
+			//	part height
+			//	chuck height
+			// Note: The lower (closer to 0) the numerical number, the closer to the work surface you are
+			// This should be "floor + chuck height + part height"
+			uint zBoardHeight = place.Loc().z(); // this is presently already set to "Home:z"
+			uint zChuckHeight = chuck.Height();
+			uint zPartHeight = pickup.Size().z();
+			uint z = zBoardHeight + zChuckHeight + zPartHeight;
+
+			place.Loc().z(z);
+			ofs << "# " << name << " pickup: " << pickup.Dump() << " bh: " << zBoardHeight << " ch: " << zChuckHeight << " ph: " << zPartHeight << std::endl;
+			ofs << place.Export() << std::endl;
 			if(ofsRef.is_open())
 			{
-				uint pickupNum = mPartPickupPlaceNum[name].first;
 				uint placeNum = mPartPickupPlaceNum[name].second;
-				std::string pickupDescription = mPickup[pickupNum-1].Description();
+				std::string pickupDescription = pickup.Description();
 				std::string placeDescription = mPlace[name].Name();
+
 				addWhiteSpcs(pickupDescription, 25);
 				addWhiteSpcs(placeDescription, 10);
-				ofsRef << std::setfill('0') << std::setw(3) << placeNum << " " << pickupDescription << placeDescription << "\r\n"; // dos file, needs CR
+				ofsRef << std::setfill('0') << std::setw(3) << placeNum
+					<< " " << pickupDescription << placeDescription
+					<< "\r\n"; // dos file, needs CR
 			}
 		});
 		ofs.flush();
@@ -272,6 +352,47 @@ std::string CBom::ExportPlace(std::string fname, std::string fnameRef)
 		}
 	}
 	else ossError << "Error - Place - Unable to open file '" << fname << "'";
+
+	return ossError.str();
+}
+
+std::string CBom::ImportChuck(std::string fname)
+{
+	std::ostringstream ossError;
+	std::ifstream ifs(fname.c_str(), std::ifstream::in);
+	std::vector<CBomChuck> ar;
+
+	if(ifs.is_open())
+	{
+		uint lineNum = 0;
+
+		while(!ifs.eof() && ossError.str().size() == 0)
+		{
+			std::string strLine;
+			std::getline(ifs, strLine);
+
+			strLine = stringTrim(strLine, "#");
+			lineNum ++;
+
+			if(strLine.size())
+			{
+				// std::transform(strLine.begin(), strLine.end(), strLine.begin(), [](const unsigned char i){ return tolower(i); });
+				CBomChuck chuck;
+				ossError << chuck.Parse(strLine);
+				if(ossError.str().size() == 0)
+					ar.push_back(chuck);
+			}
+		}
+		ifs.close();
+
+		if(ossError.str().size())
+			ossError << " on line " << lineNum;
+		else if(ar.size())
+			mChuck = ar;
+		else ossError << "No chucks imported.";
+		ifs.close();
+	}
+	else ossError << "Error - Chuck - Unable to open file '" << fname << "'";
 
 	return ossError.str();
 }

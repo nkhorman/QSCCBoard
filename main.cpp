@@ -50,6 +50,7 @@ std::string CBoardEx::ImportSequence(std::ifstream &ifs)
 		std::string strLine;
 		std::getline(ifs, strLine);
 
+		strLine = stringTrim(strLine, "#");
 		lineNum ++;
 		if(strLine.size())
 		{
@@ -81,6 +82,7 @@ std::string CBoardEx::ImportPlace(std::ifstream &ifs)
 		std::string strLine;
 		std::getline(ifs, strLine);
 
+		strLine = stringTrim(strLine, "#");
 		lineNum ++;
 		if(strLine.size())
 		{
@@ -290,6 +292,8 @@ int main(int argc, char **argv)
 
 			std::ostringstream ossError;
 
+			if(mapArgs.find("chuck") != mapArgs.end())
+				ossError << bom.ImportChuck(mapArgs["chuck"]);
 			if(mapArgs.find("pickup") != mapArgs.end())
 				ossError << bom.ImportPickup(mapArgs["pickup"]);
 			if(ossError.str().size() == 0 && mapArgs.find("place") != mapArgs.end())
