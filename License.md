@@ -8,4 +8,4 @@ This program, the constituant source and documentation (here-in defined as "THIS
 * THIS PROGRAM may be used, and extened by anyone, and may be redistributed, only as a whole. ie. Binary and the constituent source and documentation, together.
 * No one may "sell" THIS PROGRAM.
 * Anyone may use THIS PROGRAM as an integral part of their internal business operations for the purpose for which it is written.
-* Alterations, enhancements, or extentions of THIS PROGRAM, must be submitted back to THE PROJECT for potential inclusion, under the same licensing terms. I want to keep THE PROJECT strctly out in the open, so that everone benefits from it.
+* Alterations, enhancements, or extentions of THIS PROGRAM, must be submitted back to THE PROJECT for potential inclusion, under the same licensing terms. I want to keep THE PROJECT strictly out in the open, so that everone benefits from it.
