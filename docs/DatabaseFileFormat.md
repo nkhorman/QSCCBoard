@@ -1,6 +1,9 @@
 BRDATAx.DAT File Format
 ---
 
+Copyright by Steve Clynes, 2019
+Portions Copyright by Neal Horman, 2020
+
 The following information was acumulated by means of reverse engineering, and is incomplete, and may be erronious.
 
 Header format
