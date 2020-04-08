@@ -2,40 +2,44 @@ BRDATAx.DAT File Format
 ---
 
 Copyright by Steve Clynes, 2019
-Portions Copyright by Neal Horman, 2020
 
-The following information was acumulated by means of reverse engineering, and is incomplete, and may be erronious.
+Portions Copyright by Neal Horman, 2020
+   
+
+The following information was accumulated by means of reverse engineering, and is incomplete, and may be erroneous.
+
+Values are decimal, unless expressly prefixed with 0x for hex values.
 
 Header format
 --
 
-	00	Sequence count lower byte
-	01	Pick count
-	02	Place count
-	03	Chuck count
-	04	Repeat Pick count
-	05	Repeat Place count
-	06	Extent count
-	07	Filesize low byte
-	08	Filesize high byte, add 0xa8
-	09	00	?
-	0A	00	?
-	0B	00	? - seems like a byte value
-	0C	00	? - seems like a byte value
-	0D	00	?
-	0E	00	?
-	0F	00	Bit 0 = MSB of sequence count
+	Offset 0	Sequence count lower byte
+	Offset 1	Pick count
+	Offset 2	Place count
+	Offset 3	Chuck count
+	Offset 4	Repeat Pick count
+	Offset 5	Repeat Place count
+	Offset 6	Extent count
+	Offset 7	Filesize low byte
+	Offset 8	Filesize high byte, add 0xa8
+	Offset 9	?
+	Offset 10	?
+	Offset 11	? - seems like a byte value
+	Offset 12	? - seems like a byte value
+	Offset 13	?
+	Offset 14	?
+	Offset 15	0 - Bit 0 = MSB of sequence count
 
-Format records follow starting at offet 0x10
+Format records follow starting at offset 16
 ---
 
-	0x10	Sequence start
-	n	Pickup start		= Sequence start		+ (sequence count * 4)
-	n	Place start			= Pickup start			+ (pickup count * 10)
-	n	Chuck start			= Place start			+ (place count * 10)
-	n	RepeatPickup start	= Chuck start			+ (chuck count * 10)
-	n	RepeatPlace start	= RepeatPickup start	+ (repeat pickup count * 10)
-	n	Extent start		= Chuck start			+ (repeat place count * 10)
+	Offset 16	Sequence start
+	Offset n	Pickup start		= Sequence start		+ (sequence count * 4)
+	Offset n	Place start			= Pickup start			+ (pickup count * 10)
+	Offset n	Chuck start			= Place start			+ (place count * 10)
+	Offset n	RepeatPickup start	= Chuck start			+ (chuck count * 10)
+	Offset n	RepeatPlace start	= RepeatPickup start	+ (repeat pickup count * 10)
+	Offset n	Extent start		= Chuck start			+ (repeat place count * 10)
 
 
 Sequence format
@@ -103,33 +107,33 @@ Extent format
 Transport extent (board information)
 -
 	Extent A
-	Offset 0	Command (06)
-	Offset 1	Extent B pointer (current + 1)
+	Offset 0	Extent Type - 6
+	Offset 1	Extent B pointer (current extent + 1)
 	Offset 2	Board width low byte
 	Offset 3	Board width high byte
 	Offset 4	Pin/edge registration : 0 = edge, 1 = pin
-	Offset 5	BRSTRT (E0)
-	Offset 6	BMAX (75)
-	Offset 7	BA/DECL low byte (64)
-	Offset 8	BA/DECL high byte (01)
-	Offset 9	00
+	Offset 5	BRSTRT
+	Offset 6	BMAX
+	Offset 7	BA/DECL low byte
+	Offset 8	BA/DECL high byte
+	Offset 9	0
 
 	Extent B
-	Offset 0	Command (07)
+	Offset 0	Extent type - 7
 	Offset 1	00
-	Offset 2	Gap (50)
-	Offset 3	DIS2PIN (36)
-	Offset 4	RSTRT (E0)
-	Offset 5	RMAX (5A)
-	Offset 6	RAC/DECL low byte (C8)
-	Offset 7	RAC/DECL low byte (01)
-	Offset 8	00
-	Offset 9	00
+	Offset 2	Gap
+	Offset 3	DIS2PIN
+	Offset 4	RSTRT
+	Offset 5	RMAX
+	Offset 6	RAC/DECL low byte
+	Offset 7	RAC/DECL low byte
+	Offset 8	0
+	Offset 9	0
 
 LAE extent : describes component dimensions and laser align point & method
 -
-	Offset 0	Command (0C)
-	Offset 1	00
+	Offset 0	Extent type - 12
+	Offset 1	0
 	Offset 2	Width low byte
 	Offset 3	[2:0] = Width high byte, [7:3] = width tol
 	Offset 4	Length low byte
@@ -137,11 +141,11 @@ LAE extent : describes component dimensions and laser align point & method
 	Offset 6	Z measure point low byte
 	Offset 7	[1:0] = Z measure high byte, [7:2] = Measure type
 	Offset 8	[6:0] = pickup delay, [7] = VAC ver.
-	Offset 9	00
+	Offset 9	0
 
-Pickup Repeat format : Used for waffle tray definitions
+Pickup Repeat extent : Used for waffle tray definitions
 -
-	Offset 0	Command (01)
+	Offset 0	Extent type - 1
 	Offset 1	Next extent (possibly point to LAE?)
 	Offset 2	Column step HIGH byte [3:0], current count [7:4] ?
 	Offset 3	Column step LOW byte. NB high and low not same order as other numbers.
@@ -149,19 +153,19 @@ Pickup Repeat format : Used for waffle tray definitions
 	Offset 5	Row step LOW byte. NB high and low not same order as other numbers.
 	Offset 6	Columns (X)	
 	Offset 7	Rows (Y)
-	Offset 8	FF
-	Offset 9	FF
+	Offset 8	255
+	Offset 9	255
 
 
 Place Repeat format
 --
-	Offset 0 - imageColSpanHi
-	Offset 1 - imageColSpanLo
-	Offset 2 - 0 - ? seems like a byte value
-	Offset 3 - 0 - ? seems like a byte value
-	Offset 4 - imageRowSpanHi
-	Offset 5 - imageRowSpanLo
-	Offset 6 - 0 - ? seems like a byte value
-	Offset 7 - 0 - ? seems like a byte value
-	Offset 8 - col
-	Offset 9 - rows
+	Offset 0	imageColSpanHi
+	Offset 1	imageColSpanLo
+	Offset 2	? - seems like a byte value
+	Offset 3	? - seems like a byte value
+	Offset 4	imageRowSpanHi
+	Offset 5	imageRowSpanLo
+	Offset 6	? - seems like a byte value
+	Offset 7	? - seems like a byte value
+	Offset 8	col
+	Offset 9	rows
