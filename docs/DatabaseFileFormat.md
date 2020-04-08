@@ -1,6 +1,8 @@
 BRDATAx.DAT File Format
 ---
 
+The following information was acumulated by means of reverse engineering, and is incomplete, and may be erronious.
+
 Header format
 --
 
@@ -8,36 +10,51 @@ Header format
 	01	Pick count
 	02	Place count
 	03	Chuck count
-	04	00	?
-	05	00	?
+	04	Repeat Pick count
+	05	Repeat Place count
 	06	Extent count
 	07	Filesize low byte
 	08	Filesize high byte, add 0xa8
 	09	00	?
 	0A	00	?
-	0B	00	?
-	0C	00	?
+	0B	00	? - seems like a byte value
+	0C	00	? - seems like a byte value
 	0D	00	?
 	0E	00	?
 	0F	00	Bit 0 = MSB of sequence count
-	10	Sequence start
-	pickup start = Sequence start + (sequence count * 4)
-	place start  = Pickup start   + (pickup count * 10)
-	Chuck start  = Place start    + (place count * 10)
-	Extent start = Chuck start    + (chuck count * 10)
 
+Format records follow starting at offet 0x10
+---
 
+	0x10	Sequence start
+	n	Pickup start		= Sequence start		+ (sequence count * 4)
+	n	Place start			= Pickup start			+ (pickup count * 10)
+	n	Chuck start			= Place start			+ (place count * 10)
+	n	RepeatPickup start	= Chuck start			+ (chuck count * 10)
+	n	RepeatPlace start	= RepeatPickup start	+ (repeat pickup count * 10)
+	n	Extent start		= Chuck start			+ (repeat place count * 10)
 
 
 Sequence format
 --
-	Offset 0	Command : 0x01 = pickup		parameter = pickup index
-		: 0x02 = place		parameter = place index
-		: 0x03 = chuck (nozzle)	parameter = nozzle index
-		: 0x10 = transport	parameter = 0-> hold, 1-> pass
-	Offset 1	Parameter
-	Offset 2	0xff
-	Offset 3	0xff
+	Offset 0	Command
+		: 0 = Stop
+		: 1 = Pickup		param1 = pickup index, param3 = inpection type - 223 = lead inspection
+		: 2 = Place			param1 = place index, param2 - 10 = dispense only, 11 = dispense and place, 255 = place only
+		: 3 = Chuck			param1 = nozzle index
+		: 4 = Test			param1 = test index
+		: 5 = Repeat		param1 = repeat index, param2 - 9 = test image, otherwise 255
+		: 6 = Goto			param1 = sequence step index
+		: 7 = Wait Address	param1 = address, param2 = port, param3 = operation type - 0 = off, 1 = on, 2 = toggle, 3 = pulse
+		: 8 = Output Address - see Wait Address operation code 7 for param values
+		: 9 = Home			param1 = axis number - 1 = X, 2 = Y, 3 = Z, 4 = T, 0 = All (X, Y, Z, and T)
+		: 10 = If Address	- see Wait Address operation code 7 for param values
+		: 11 = Run			Param1 = run index
+		: 15 = Mod Code		Param1 = code number index, Param2 = New value for mod code
+		: 16 = Transport	param1 = 0-> hold, 1-> pass
+	Offset 1	Param1 - 255 if not used
+	Offset 2	Param2 - 255 if not used
+	Offset 3	Param3 - 255 if not used
 
 Pickup format
 --
@@ -106,7 +123,7 @@ Transport extent (board information)
 	Offset 8	00
 	Offset 9	00
 
-LAE : describes component dimensions and laser align point & method
+LAE extent : describes component dimensions and laser align point & method
 -
 	Offset 0	Command (0C)
 	Offset 1	00
@@ -119,7 +136,7 @@ LAE : describes component dimensions and laser align point & method
 	Offset 8	[6:0] = pickup delay, [7] = VAC ver.
 	Offset 9	00
 
-Pickup repeat : Used for waffle tray definitions
+Pickup Repeat format : Used for waffle tray definitions
 -
 	Offset 0	Command (01)
 	Offset 1	Next extent (possibly point to LAE?)
@@ -131,3 +148,17 @@ Pickup repeat : Used for waffle tray definitions
 	Offset 7	Rows (Y)
 	Offset 8	FF
 	Offset 9	FF
+
+
+Place Repeat format
+--
+	Offset 0 - imageColSpanHi
+	Offset 1 - imageColSpanLo
+	Offset 2 - 0 - ? seems like a byte value
+	Offset 3 - 0 - ? seems like a byte value
+	Offset 4 - imageRowSpanHi
+	Offset 5 - imageRowSpanLo
+	Offset 6 - 0 - ? seems like a byte value
+	Offset 7 - 0 - ? seems like a byte value
+	Offset 8 - col
+	Offset 9 - rows
