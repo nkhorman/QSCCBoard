@@ -33,6 +33,7 @@ public:
 protected:
 	std::string ImportSequence(std::ifstream &ifs);
 	std::string ImportPlace(std::ifstream &ifs);
+	std::string ImportPickup(std::ifstream &ifs);
     std::string Import(std::vector<std::string> const &args);
     std::string Export(std::vector<std::string> const &args);
 
@@ -104,6 +105,39 @@ std::string CBoardEx::ImportPlace(std::ifstream &ifs)
 	return ossError.str();
 }
 
+std::string CBoardEx::ImportPickup(std::ifstream &ifs)
+{
+	std::vector<CBrdPPC> ar;
+	std::ostringstream ossError;
+	uint lineNum = 0;
+
+	while(!ifs.eof() && ossError.str().size() == 0)
+	{
+		std::string strLine;
+		std::getline(ifs, strLine);
+
+		strLine = stringTrim(strLine, "#");
+		lineNum ++;
+		if(strLine.size())
+		{
+			std::transform(strLine.begin(), strLine.end(), strLine.begin(), [](const unsigned char i){ return tolower(i); });
+			CBrdPPC ppc;
+			ossError << ppc.ParsePlace(strLine);
+			if(ossError.str().size() == 0)
+				ar.push_back(ppc);
+		}
+	}
+
+	if(ossError.str().size())
+		ossError << " on line " << lineNum;
+	else if(ar.size())
+		mPickup = ar;
+	else ossError << "No pickups imported.";
+	// std::cout << __func__ << " " << __LINE__ << std::endl;
+
+	return ossError.str();
+}
+
 std::string CBoardEx::Import(std::vector<std::string> const &args)
 {
 	std::ostringstream ossError;
@@ -119,9 +153,12 @@ std::string CBoardEx::Import(std::vector<std::string> const &args)
 				ossError << ImportSequence(ifstr);
 			else if(sectionName == "place")
 				ossError << ImportPlace(ifstr);
+			else if(sectionName == "pickup")
+				ossError << ImportPickup(ifstr);
 			else
 				ossError << "Error - Import - Invalid secion name. Try;"
-					" sequence, pickup, place, chuck, repeat pickup, repeat place, or extent"
+					// " sequence, pickup, place, chuck, repeat pickup, repeat place, or extent"
+					" sequence, pickup, or place"
 					;
 
 			if(ossError.str().size() == 0)
@@ -336,6 +373,9 @@ int main(int argc, char **argv)
 			});
 
 			std::ostringstream ossError;
+			uint width = (mapArgs.find("width") != mapArgs.end()
+				? std::atoi(mapArgs["width"].c_str())
+				: 0);
 			CBrdLoc machineHome;
 
 			if(mapArgs.find("home") != mapArgs.end())
@@ -346,6 +386,8 @@ int main(int argc, char **argv)
 				std::for_each(arHome.begin(), arHome.end(), [&](std::string const &item)
 					{ machineHome.Parse(item); });
 			}
+			if(width && machineHome.y())
+				machineHome.y(machineHome.y() + width);
 
 			CFiducial fid(machineHome);
 
