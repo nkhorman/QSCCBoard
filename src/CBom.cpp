@@ -313,22 +313,19 @@ std::string CBom::ExportPlace(std::string fname, std::string fnameRef)
 			uint pickupNum = mPartPickupPlaceNum[name].first;
 			CBomPickup pickup = mPickup[pickupNum-1];
 			CBomPlace place = mPlace[name];
-			CBomChuck chuck = (mChuck.size() > pickup.Chuck()-1 ? mChuck[pickup.Chuck()-1] : CBomChuck());
 
 			// Compute the placement z
 			// based on;
 			//	"board height", which is the floor
 			//	part height
-			//	chuck height
-			// Note: The lower (closer to 0) the numerical number, the closer to the work surface you are
-			// This should be "floor + chuck height + part height"
+			// Note: The greater (further from 0) the numerical number, the closer to the work surface you are
+			// This should be "floor - part height"
 			uint zBoardHeight = place.Loc().z(); // this is presently already set to "Home:z"
-			uint zChuckHeight = chuck.Height();
 			uint zPartHeight = pickup.Size().z();
-			uint z = zBoardHeight + zChuckHeight + zPartHeight;
+			uint z = zBoardHeight - zPartHeight;
 
 			place.Loc().z(z);
-			ofs << "# " << name << " pickup: " << pickup.Dump() << " bh: " << zBoardHeight << " ch: " << zChuckHeight << " ph: " << zPartHeight << std::endl;
+			ofs << "# " << name << " pickup: " << pickup.Dump() << " bh: " << zBoardHeight << " ph: " << zPartHeight << std::endl;
 			ofs << place.Export() << std::endl;
 			if(ofsRef.is_open())
 			{
