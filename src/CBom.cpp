@@ -229,10 +229,9 @@ std::string CBom::ExportPickup(std::string fname, std::string fnameRef)
 	{
 		uint lastChuckNum = 0;
 		uint lastItemNum = 0;
-		uint pickupNum = 1;
 		std::for_each(mPickup.begin(), mPickup.end(), [&](CBomPickup const &item)
 		{
-			ofs << item.Export(lastChuckNum, lastItemNum, pickupNum++);
+			ofs << item.Export(lastChuckNum, lastItemNum, item.Num());
 			if(ofsRef.is_open())
 			{
 				std::string pickupDescription = item.Description();
