@@ -426,10 +426,15 @@ void CBrdLoc::Offset(CBrdLoc const &offset)
 	if(offset.x())
 		mX = offset.x() - mX;
 	if(offset.y())
-		mY = offset.y() - mY;
+	{
+		if(Rotate90())
+			mY = offset.y() - mY;
+		else
+			mY += offset.y();
+	}
+
 	if(offset.z())
 		mZ = offset.z() - mZ;
-	// TODO - rotation.... hmmm...
 }
 
 // **

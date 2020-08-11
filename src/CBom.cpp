@@ -100,12 +100,19 @@ std::string CBomPlace::Parse(std::string const &str)
 			// Important note - this auto-rotates the board 90 degrees CW
 			//	Board datum is presumed to be lower left corner = 0,0
 			//	Machine datum is lower right corner = X=23460, y=6790 for a Quad IIc,115 workbox
-			uint y = std::atoi(cols[1].c_str()); // board x -> machine y
-			uint x = std::atoi(cols[2].c_str()); // board y -> machine x
-			float t = 66.666666666666667 * std::atoi(cols[3].c_str()); // board rotation -> machine theta
+			uint y = std::atoi( Rotate90() ? cols[1].c_str() : cols[2].c_str() ); // board x -> machine y
+			uint x = std::atoi( Rotate90() ? cols[2].c_str() : cols[1].c_str() ); // board y -> machine x
+			uint rot = std::atoi(cols[3].c_str());
+			if(!Rotate90())
+			{
+				if(rot == 0)
+					rot = 360;
+				rot -= 90;
+			}
+			float t = 66.666666666666667 * rot; // board rotation -> machine theta
 			uint z = (cols.size() == 5 ? std::atoi(cols[4].c_str()) : 0); // board surface -> machine z
 
-			mLoc = CBrdLoc(x, y, z, (uint)t);
+			mLoc = CBrdLoc(x, y, z, (uint)t, Rotate90());
 			mLoc.Offset(mMachineHome); // this is the datum offset operation
 		}
 		else ossError << "Error - Place - one or more empty columns";
@@ -276,6 +283,7 @@ std::string CBom::ImportPlace(std::string fname, CBrdLoc const &home)
 			{
 				// std::transform(strLine.begin(), strLine.end(), strLine.begin(), [](const unsigned char i){ return tolower(i); });
 				CBomPlace place(home);
+				place.Rotate90(mbRotate90);
 				ossError << place.Parse(strLine);
 				if(ossError.str().size() == 0)
 				{
@@ -324,7 +332,12 @@ std::string CBom::ExportPlace(std::string fname, std::string fnameRef)
 			uint z = zBoardHeight - zPartHeight;
 
 			place.Loc().z(z);
-			ofs << "# " << name << " pickup: " << pickup.Dump() << " bh: " << zBoardHeight << " ph: " << zPartHeight << std::endl;
+			ofs << "# " << name
+				<< " pickup: " << pickup.Dump()
+				<< " bh: " << zBoardHeight
+				<< " ph: " << zPartHeight
+				//<< " rotate: " << (place.Rotate90() ? "90" : "0")
+				<< std::endl;
 			ofs << place.Export() << std::endl;
 			if(ofsRef.is_open())
 			{

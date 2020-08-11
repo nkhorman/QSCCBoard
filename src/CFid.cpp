@@ -25,11 +25,11 @@ std::string CFiducial::Parse(std::string &line)
 			// Important note - this auto-rotates the board 90 degrees CW
 			//	Board datum is presumed to be lower left corner = 0,0
 			//	Machine datum is lower right corner = X=23460, y=6790 for a Quad IIc,115 workbox
-			uint y = std::atoi(cols[1].c_str()); // board x -> machine y
-			uint x = std::atoi(cols[2].c_str()); // board y -> machine x
+			uint y = std::atoi( Rotate90() ? cols[1].c_str() : cols[2].c_str() ); // board x -> machine y
+			uint x = std::atoi( Rotate90() ? cols[2].c_str() : cols[1].c_str() ); // board y -> machine x
 			// uint z = std::atoi(cols[3].c_str()); // board surface -> machine z
 
-			CBrdLoc fiducial(x, y, 0, 0);
+			CBrdLoc fiducial(x, y, 0, 0, Rotate90());
 			fiducial.Offset(mMachineHome); // this is the datum offset operation
 			mFiducials.push_back(fiducial);
 		}
@@ -82,12 +82,12 @@ std::string CFiducial::ExportRef(std::string prefix, uint num, CBrdLoc loc)
 		// PF11 Y +0.00000e+000 21.703 06.898 00.000 00.000 00 0.000 0.000 000 000 0.300 0.300 0.058 0.058 001 075 090 000 000 000 0001 96 0002 96
 		float fdia = (float)60 / 1000; // fiducial diameter
 
-		// CC is fucking stupid to specify mils in floats !
+		// Specifying mils in floats... I don't understand this thinking
 		oss << prefix << num << " " << (bIsUsed ? "Y" : "N") << " +0.00000e+000"
 			<< " " << std::setfill('0') << std::setw(6) << std::setprecision(5) << ((float)loc.x() / 1000) //"21.703 06.898"
 			<< " " << std::setfill('0') << std::setw(6) << std::setprecision(5) << ((float)loc.y() / 1000) //"21.703 06.898"
 			<< " 00.000 00.000 00 0.000 0.000 000 000 0.300 0.300"
-			// the std stream formatter is some fucked up shit! cause ... who wants trailing zerros ?
+			// the std stream formatter is some fucked up shit! cause ... who wants trailing zeros ?
 			// I just want precision to be 3... FUCK!
 			<< " " << std::setfill('0') << std::left << std::setw(5) << std::setprecision(5) << fdia //" 0.058 0.058 "
 			<< " " << std::setfill('0') << std::left << std::setw(5) << std::setprecision(5) << fdia //" 0.058 0.058 "

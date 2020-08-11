@@ -14,12 +14,14 @@ public:
 		, mY(0)
 		, mZ(0)
 		, mT(0)
+		, mbRotate90(true)
 		{};
-	CBrdLoc(uint x, uint y, uint z, uint t)
+	CBrdLoc(uint x, uint y, uint z, uint t, bool bRotate = true)
 		: mX(x)
 		, mY(y)
 		, mZ(z)
 		, mT(t)
+		, mbRotate90(bRotate)
 		{};
 	virtual ~CBrdLoc() {};
 
@@ -40,12 +42,16 @@ public:
 
 	void Offset(CBrdLoc const &offset);
 
+	inline void Rotate90(bool v) { mbRotate90 = v; };
+	inline bool Rotate90() const { return mbRotate90; };
+
 	std::string Dump() const;
 protected:
 	uint mX;
 	uint mY;
 	uint mZ;
 	uint mT;
+	bool mbRotate90;
 };
 
 #endif

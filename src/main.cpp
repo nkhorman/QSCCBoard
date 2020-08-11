@@ -307,6 +307,7 @@ int main(int argc, char **argv)
 {
     CAppArg cliargs(argc, argv);
     CBoardEx board;
+	bool bRotate90 = true;
 
     cliargs.forEach([&](std::string const &key, std::string const &val)
     {
@@ -316,7 +317,7 @@ int main(int argc, char **argv)
 		split(val, "     ", [&](std::string const &v) { vals.push_back(v); });
 
         // std::cout << "key: " << key << ", val: " << val << std::endl;
-        if(action == "read")
+		if(action == "read")
         {
             std::ifstream ifstr(val.c_str(), std::ifstream::in | std::ifstream::binary);
 
@@ -365,6 +366,17 @@ int main(int argc, char **argv)
 
 			std::ostringstream ossError;
 
+			if(mapArgs.find("rotate0") != mapArgs.end())
+			{
+				bom.Rotate90(false);
+				bRotate90 = false;
+			}
+			if(mapArgs.find("rotate90") != mapArgs.end())
+			{
+				bom.Rotate90(true);
+				bRotate90 = true;
+			}
+
 			if(mapArgs.find("chuck") != mapArgs.end())
 				ossError << bom.ImportChuck(mapArgs["chuck"]);
 			if(mapArgs.find("pickup") != mapArgs.end())
@@ -383,7 +395,7 @@ int main(int argc, char **argv)
 					std::for_each(arHome.begin(), arHome.end(), [&](std::string const &item)
 						{ machineHome.Parse(item); });
 				}
-				if(width && machineHome.y())
+				if(bom.Rotate90() && width && machineHome.y())
 					machineHome.y(machineHome.y() + width);
 				ossError << bom.ImportPlace(mapArgs["place"], machineHome);
 			}
@@ -398,6 +410,7 @@ int main(int argc, char **argv)
 		else if(action == "fid")
 		{
 			std::map<std::string, std::string> mapArgs;
+			bool bRotate90 = true;
 
 			std::for_each(vals.begin(), vals.end(), [&](std::string const &v)
 			{
@@ -407,6 +420,11 @@ int main(int argc, char **argv)
 				std::transform(k.begin(), k.end(), k.begin(), [](const unsigned char i){ return tolower(i); });
 				mapArgs[k] = ar[1];
 			});
+
+			if(mapArgs.find("rotate0") != mapArgs.end())
+				bRotate90 = false;
+			if(mapArgs.find("rotate90") != mapArgs.end())
+				bRotate90 = true;
 
 			std::ostringstream ossError;
 			uint width = (mapArgs.find("width") != mapArgs.end()
@@ -422,10 +440,11 @@ int main(int argc, char **argv)
 				std::for_each(arHome.begin(), arHome.end(), [&](std::string const &item)
 					{ machineHome.Parse(item); });
 			}
-			if(width && machineHome.y())
+			if(bRotate90 && width && machineHome.y())
 				machineHome.y(machineHome.y() + width);
 
 			CFiducial fid(machineHome);
+			fid.Rotate90(bRotate90);
 
 			if(mapArgs.find("in") != mapArgs.end())
 				ossError << fid.Import(mapArgs["in"]);

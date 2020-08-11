@@ -51,6 +51,7 @@ public:
 	CBomPlace() {};
 	CBomPlace(CBrdLoc home)
 		: mMachineHome(home)
+		, mbRotate90(true)
 		{};
 	virtual ~CBomPlace() {};
 
@@ -62,10 +63,14 @@ public:
 
 	inline CBrdLoc &Loc() { return mLoc; };
 
+	inline bool Rotate90() const { return mbRotate90; };
+	inline void Rotate90(bool v) { mbRotate90 = v; };
+
 protected:
 	std::string mName;
 	CBrdLoc mLoc;
 	CBrdLoc mMachineHome;
+	bool mbRotate90;
 };
 
 class CBomChuck
@@ -102,7 +107,9 @@ protected:
 class CBom
 {
 public:
-	CBom() {};
+	CBom()
+		: mbRotate90(true)
+		{};
 	virtual ~CBom() {};
 
 	std::string ImportPickup(std::string fname);
@@ -113,6 +120,9 @@ public:
 
 	std::string ImportChuck(std::string fname);
 
+	inline void Rotate90(bool v) { mbRotate90 = v; };
+	inline bool Rotate90() const { return mbRotate90; };
+
 protected:
 
 	std::vector<CBomPickup> mPickup;
@@ -121,5 +131,6 @@ protected:
 	std::map<std::string, std::pair<uint, uint>> mPartPickupPlaceNum;
 	std::map<std::string, CBomPlace> mPlace;
 	std::vector<CBomChuck> mChuck;
+	bool mbRotate90;
 };
 #endif
