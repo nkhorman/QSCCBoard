@@ -255,11 +255,15 @@ std::string CBrdSeq::Parse(std::string str)
 		mCmd = 15;
 		uint param1 = std::atoi(strs[2].c_str());
 		uint param2 = std::atoi(strs[3].c_str());
+
+		if(param2 == 0 and strs.size() == 5 && strs[3] == "=")
+			param2 = std::atoi(strs[4].c_str());
+
 		mParam.clear();
 		mParam.push_back(param1);
 		mParam.push_back(param2);
 		mParam.push_back(0);
-		if(param1 == 0 || param1 > 74 || strs.size() > 4)
+		if(param1 == 0 || param1 > 74 || strs.size() > 5)
 			invalidQualifier = 2;
 	}
 	else if(strs.size() >= 2 && strs[0] == "transport")

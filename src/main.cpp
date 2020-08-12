@@ -400,7 +400,11 @@ int main(int argc, char **argv)
 				ossError << bom.ImportPlace(mapArgs["place"], machineHome);
 			}
 			if(ossError.str().size() == 0 && mapArgs.find("sequence") != mapArgs.end())
-				ossError << bom.ExportPickup(mapArgs["sequence"], mapArgs["pickuprefout"]);
+				ossError << bom.ExportPickup(
+					mapArgs["sequence"], mapArgs["pickuprefout"]
+					, mapArgs["sequencepre"]
+					, mapArgs["sequencepost"]
+				);
 			if(ossError.str().size() == 0 && mapArgs.find("placeout") != mapArgs.end())
 				ossError << bom.ExportPlace(mapArgs["placeout"], mapArgs["placerefout"]);
 

@@ -226,16 +226,28 @@ std::string CBom::ImportPickup(std::string fname)
 	return ossError.str();
 }
 
-std::string CBom::ExportPickup(std::string fname, std::string fnameRef)
+std::string CBom::ExportPickup(
+	std::string fname, std::string fnameRef
+	, std::string fnamePre, std::string fnamePost
+	)
 {
 	std::ostringstream ossError;
 	std::ofstream ofs(fname.c_str(), std::ofstream::out | std::ofstream::trunc);
 	std::ofstream ofsRef(fnameRef.c_str(), std::ofstream::out | std::ofstream::trunc);
+	std::ifstream ofsPre(fnamePre.c_str(), std::ofstream::in);
+	std::ifstream ofsPost(fnamePost.c_str(), std::ofstream::in);
 
 	if(ofs.is_open())
 	{
 		uint lastChuckNum = 0;
 		uint lastItemNum = 0;
+
+		if(ofsPre.is_open())
+		{
+			ofs << ofsPre.rdbuf();
+			ofs.flush();
+			ofsPre.close();
+		}
 		std::for_each(mPickup.begin(), mPickup.end(), [&](CBomPickup const &item)
 		{
 			ofs << item.Export(lastChuckNum, lastItemNum, item.Num());
@@ -247,7 +259,14 @@ std::string CBom::ExportPickup(std::string fname, std::string fnameRef)
 					<< pickupDescription << "\r\n"; // dos file, needs CR
 			}
 		});
+		if(ofsPost.is_open())
+		{
+			ofs << ofsPost.rdbuf();
+			ofs.flush();
+			ofsPost.close();
+		}
 		ofs << "chuck 0" << std::endl << "goto 0" << std::endl;
+
 		ofs.flush();
 		ofs.clear();
 		if(ofsRef.is_open())
