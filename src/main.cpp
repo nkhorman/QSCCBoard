@@ -31,6 +31,10 @@ public:
     std::string SectionDump(std::string strSectionName);
 
 protected:
+	void StreamRead(std::ifstream &ifs
+		, std::ostringstream &ossError
+		, std::function<bool(std::string const &, std::ostringstream &)> fn
+		);
 	std::string ImportSequence(std::ifstream &ifs);
 	std::string ImportPlace(std::ifstream &ifs);
 	std::string ImportPickup(std::ifstream &ifs);
@@ -41,13 +45,15 @@ protected:
     // bool mbModeJson;
 };
 
-std::string CBoardEx::ImportSequence(std::ifstream &ifs)
+void CBoardEx::StreamRead(std::ifstream &ifs
+	, std::ostringstream &ossError
+	, std::function<bool(std::string const &, std::ostringstream &)> fn
+	)
 {
-	std::vector<CBrdSeq> arSeq;
-	std::ostringstream ossError;
 	uint lineNum = 0;
+	bool bAgain = true;
 
-	while(!ifs.eof() && ossError.str().size() == 0)
+	while(bAgain && !ifs.eof() && ossError.str().size() == 0)
 	{
 		std::string strLine;
 		std::getline(ifs, strLine);
@@ -57,18 +63,31 @@ std::string CBoardEx::ImportSequence(std::ifstream &ifs)
 		if(strLine.size())
 		{
 			std::transform(strLine.begin(), strLine.end(), strLine.begin(), [](const unsigned char i){ return tolower(i); });
-			CBrdSeq seq;
-			ossError << seq.Parse(strLine);
-			if(ossError.str().size() == 0)
-				arSeq.push_back(seq);
+			bAgain = fn(strLine, ossError);
+			if(ossError.str().size() > 0)
+				ossError << " on line " << lineNum;
 		}
 	}
+}
 
-	if(ossError.str().size())
-		ossError << " on line " << lineNum;
+std::string CBoardEx::ImportSequence(std::ifstream &ifs)
+{
+	std::vector<CBrdSeq> ar;
+	std::ostringstream ossError;
 
-	if(ossError.str().size() == 0 && arSeq.size())
-		mSeq = arSeq;
+	StreamRead(ifs, ossError, [&](std::string const &strLine, std::ostringstream &ossError)
+	{
+		CBrdSeq seq;
+		ossError << seq.Parse(strLine);
+		if(ossError.str().size() == 0)
+			ar.push_back(seq);
+
+		return true;
+	});
+
+	if(ossError.str().size() == 0 && ar.size())
+		mSeq = ar;
+	else ossError << "No sequences imported.";
 
 	return ossError.str();
 }
@@ -77,31 +96,20 @@ std::string CBoardEx::ImportPlace(std::ifstream &ifs)
 {
 	std::vector<CBrdPPC> ar;
 	std::ostringstream ossError;
-	uint lineNum = 0;
 
-	while(!ifs.eof() && ossError.str().size() == 0)
+	StreamRead(ifs, ossError, [&](std::string const &strLine, std::ostringstream &ossError)
 	{
-		std::string strLine;
-		std::getline(ifs, strLine);
+		CBrdPPC ppc;
+		ossError << ppc.Parse(strLine);
+		if(ossError.str().size() == 0)
+			ar.push_back(ppc);
 
-		strLine = stringTrim(strLine, "#");
-		lineNum ++;
-		if(strLine.size())
-		{
-			std::transform(strLine.begin(), strLine.end(), strLine.begin(), [](const unsigned char i){ return tolower(i); });
-			CBrdPPC ppc;
-			ossError << ppc.ParsePlace(strLine);
-			if(ossError.str().size() == 0)
-				ar.push_back(ppc);
-		}
-	}
+		return true;
+	});
 
-	if(ossError.str().size())
-		ossError << " on line " << lineNum;
-	else if(ar.size())
+	if(ossError.str().size() == 0 && ar.size())
 		mPlace = ar;
 	else ossError << "No placements imported.";
-	// std::cout << __func__ << " " << __LINE__ << std::endl;
 
 	return ossError.str();
 }
@@ -110,31 +118,20 @@ std::string CBoardEx::ImportPickup(std::ifstream &ifs)
 {
 	std::vector<CBrdPPC> ar;
 	std::ostringstream ossError;
-	uint lineNum = 0;
 
-	while(!ifs.eof() && ossError.str().size() == 0)
+	StreamRead(ifs, ossError, [&](std::string const &strLine, std::ostringstream &ossError)
 	{
-		std::string strLine;
-		std::getline(ifs, strLine);
+		CBrdPPC ppc;
+		ossError << ppc.Parse(strLine);
+		if(ossError.str().size() == 0)
+			ar.push_back(ppc);
 
-		strLine = stringTrim(strLine, "#");
-		lineNum ++;
-		if(strLine.size())
-		{
-			std::transform(strLine.begin(), strLine.end(), strLine.begin(), [](const unsigned char i){ return tolower(i); });
-			CBrdPPC ppc;
-			ossError << ppc.ParsePlace(strLine);
-			if(ossError.str().size() == 0)
-				ar.push_back(ppc);
-		}
-	}
+		return true;
+	});
 
-	if(ossError.str().size())
-		ossError << " on line " << lineNum;
-	else if(ar.size())
+	if(ossError.str().size() == 0 && ar.size())
 		mPickup = ar;
 	else ossError << "No pickups imported.";
-	// std::cout << __func__ << " " << __LINE__ << std::endl;
 
 	return ossError.str();
 }
@@ -143,31 +140,23 @@ std::string CBoardEx::ImportChuck(std::ifstream &ifs)
 {
 	std::vector<CBrdPPC> ar;
 	std::ostringstream ossError;
-	uint lineNum = 0;
 
-	while(!ifs.eof() && ossError.str().size() == 0)
+	StreamRead(ifs, ossError, [&](std::string const &strLine, std::ostringstream &ossError)
 	{
-		std::string strLine;
-		std::getline(ifs, strLine);
+		CBrdPPC ppc;
+		ossError << ppc.Parse(strLine);
+		if(ossError.str().size() == 0)
+			ar.push_back(ppc);
 
-		strLine = stringTrim(strLine, "#");
-		lineNum ++;
-		if(strLine.size())
-		{
-			std::transform(strLine.begin(), strLine.end(), strLine.begin(), [](const unsigned char i){ return tolower(i); });
-			CBrdPPC ppc;
-			ossError << ppc.ParsePlace(strLine);
-			if(ossError.str().size() == 0)
-				ar.push_back(ppc);
-		}
-	}
+		return true;
+	});
 
-	if(ossError.str().size())
-		ossError << " on line " << lineNum;
-	else if(ar.size())
+	if(ossError.str().size() == 0 && ar.size())
 		mChuck = ar;
 	else ossError << "No chucks imported.";
-	// std::cout << __func__ << " " << __LINE__ << std::endl;
+
+	return ossError.str();
+}
 
 	return ossError.str();
 }
