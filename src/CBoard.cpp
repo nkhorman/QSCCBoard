@@ -411,10 +411,12 @@ std::string CBrdLoc::Dump() const
 
 void CBrdLoc::Parse(std::string const &k, std::string const &v)
 {
-	if(k == "x") x(std::atoi(v.c_str()));
-	else if(k == "y") y(std::atoi(v.c_str()));
-	else if(k == "z") z(std::atoi(v.c_str()));
-	else if(k == "t") t(std::atoi(v.c_str()));
+	uint vNum = std::atoi(v.c_str());
+
+	if(k == "x") x(vNum);
+	else if(k == "y") y(vNum);
+	else if(k == "z") z(vNum);
+	else if(k == "t") t(vNum);
 }
 
 void CBrdLoc::Parse(std::string const &kvp)
