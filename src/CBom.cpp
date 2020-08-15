@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <list>
 #include <iomanip>
 
 #include "CBom.h"
@@ -50,7 +51,7 @@ std::string CBomPickup::Parse(std::string const &str, std::function<void(std::st
 	return ossError.str();
 }
 
-std::string CBomPickup::Export(uint &lastChuckNum, uint &lastItemNum, uint pickupNum) const
+std::string CBomPickup::Export(uint &lastChuckNum, std::map<std::string, std::pair<uint, uint>> &placeMap) const
 {
 	std::ostringstream oss;
 
@@ -61,9 +62,14 @@ std::string CBomPickup::Export(uint &lastChuckNum, uint &lastItemNum, uint picku
 	}
 	std::for_each(mParts.begin(), mParts.end(), [&](std::string const &str)
 	{
+		std::string lowerPartName = str;
+		std::transform(lowerPartName.begin(), lowerPartName.end(), lowerPartName.begin(),
+			[](const unsigned char i){ return tolower(i); });
+		uint placeNum = placeMap[lowerPartName].second;
+
 		(void)str;
-		oss << "pickup " << pickupNum << std::endl
-			<< "place " << ++lastItemNum << std::endl
+		oss << "pickup " << mNum << std::endl
+			<< "place " << placeNum << std::endl
 			;
 	});
 
@@ -226,6 +232,27 @@ std::string CBom::ImportPickup(std::string fname)
 	return ossError.str();
 }
 
+static bool cbp_compare(const CBomPickup &lhs, const CBomPickup &rhs)
+{
+	// different chuck number
+	if(lhs.Chuck() < rhs.Chuck()) return true;
+
+	CBrdLoc lhss = lhs.Size();
+	CBrdLoc rhss = rhs.Size();
+
+	// smaller height
+	uint lhsz = lhss.z();
+	uint rhsz = rhss.z();
+	if(lhsz && rhsz && lhsz < rhsz) return true;
+
+	// smaller surface area
+	uint lhsa = lhss.x() * lhss.y();
+	uint rhsa = rhss.x() * rhss.y();
+	if(lhsa && rhsa && lhsa < rhsa) return true;
+
+	return false; // lhs is < rhs
+}
+
 std::string CBom::ExportPickup(
 	std::string fname, std::string fnameRef
 	, std::string fnamePre, std::string fnamePost
@@ -240,7 +267,10 @@ std::string CBom::ExportPickup(
 	if(ofs.is_open())
 	{
 		uint lastChuckNum = 0;
-		uint lastItemNum = 0;
+		std::list<CBomPickup> cbpl;
+
+		std::for_each(mPickup.begin(), mPickup.end(), [&](CBomPickup const &item) { cbpl.push_back(item); });
+		cbpl.sort(cbp_compare);
 
 		if(ofsPre.is_open())
 		{
@@ -248,9 +278,11 @@ std::string CBom::ExportPickup(
 			ofs.flush();
 			ofsPre.close();
 		}
-		std::for_each(mPickup.begin(), mPickup.end(), [&](CBomPickup const &item)
+		std::map<std::string, std::pair<uint, uint>> partPickupPlaceNumCopy = mPartPickupPlaceNum;
+
+		std::for_each(cbpl.begin(), cbpl.end(), [&](CBomPickup const &item)
 		{
-			ofs << item.Export(lastChuckNum, lastItemNum, item.Num());
+			ofs << item.Export(lastChuckNum, partPickupPlaceNumCopy);
 			if(ofsRef.is_open())
 			{
 				std::string pickupDescription = item.Description();
@@ -259,6 +291,7 @@ std::string CBom::ExportPickup(
 					<< pickupDescription << "\r\n"; // dos file, needs CR
 			}
 		});
+
 		if(ofsPost.is_open())
 		{
 			ofs << ofsPost.rdbuf();
