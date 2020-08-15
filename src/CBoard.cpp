@@ -573,6 +573,62 @@ std::string CBrdExtentLAE::Dump() const
 	return oss.str();
 }
 
+std::string CBrdExtentLAE::Parse(std::vector<std::string> &kvps)
+{
+	std::ostringstream ossError;
+	std::string kLast;
+
+	// process kvps
+	for(std::vector<std::string>::const_iterator it= kvps.begin();
+		it != kvps.end() && ossError.str().size() == 0;
+		it++)
+	{
+		// split kvp
+		std::vector<std::string> ar;
+		split(*it, "=:", [&](std::string const &item) { ar.push_back(item); });
+
+		if(ar.size() >= 4)
+		{
+			std::string k = ar[0];
+			std::string v = ar[1];
+			uint vNum = std::atoi(v.c_str());
+
+			if(k == "length") { mLength.Val(vNum); }
+			else if(k == "width") { mWidth.Val(vNum); }
+			else if(k == "height") { mHeight.Val(vNum); }
+			else if(k == "measuretype") { mMeasureType = vNum; }
+			else if(k == "pickupdelay") { mPickupDelay = vNum; }
+			else if(k == "vacverify") { mbVacVerify = (vNum != 0); }
+			else if(k == "tol")
+			{
+				if(kLast == "length") { mLength.Tol(vNum); }
+				else if(kLast == "width") { mWidth.Tol(vNum); }
+				else if(kLast == "height") { mHeight.Tol(vNum); }
+				else ossError << "Invalid field set '" << *it << "'";
+			}
+			else ossError << "Invalid field name '" << k << "'";
+			kLast = k;
+		}
+		else ossError << "Invalid field set '" << *it << "'";
+	};
+
+	return ossError.str();
+}
+
+std::string CBrdExtentLAE::Parse(std::string str)
+{
+	std::ostringstream ossError;
+
+	str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
+	str.erase(std::remove(str.begin(), str.end(), '\t'), str.end());
+
+	// split into key value pairs
+	std::vector<std::string> kvps;
+	split(str, ",", [&](std::string const &kvp) { kvps.push_back(kvp); });
+
+	return Parse(kvps);
+}
+
 // **
 std::string CBrdExtentRepeatPickup::Dump() const
 {
@@ -591,6 +647,55 @@ std::string CBrdExtentRepeatPickup::Dump() const
 		oss << ", Next: " << mNext;
 
 	return oss.str();
+}
+
+std::string CBrdExtentRepeatPickup::Parse(std::vector<std::string> &kvps)
+{
+	std::ostringstream ossError;
+
+	// process kvps
+	for(std::vector<std::string>::const_iterator it= kvps.begin();
+		it != kvps.end() && ossError.str().size() == 0;
+		it++)
+	{
+		// split kvp
+		std::vector<std::string> ar;
+		split(*it, "=:", [&](std::string const &item) { ar.push_back(item); });
+
+		if(ar.size() >= 6 && ar.size() <= 7)
+		{
+			std::string k = ar[0];
+			std::string v = ar[1];
+			uint vNum = std::atoi(v.c_str());
+
+			if(k == "columns") { mColumns = vNum; }
+			else if(k == "rows") { mRows = vNum; }
+			else if(k == "columnstep") { mColumnStep = vNum; }
+			else if(k == "rowstep") { mRowStep = vNum; }
+			else if(k == "columncount") { mColumnCount = vNum; }
+			else if(k == "rowcount") { mRowCount = vNum; }
+			else if(k == "next") { mNext = vNum; }
+			else ossError << "Invalid field name '" << k << "'";
+		}
+		else ossError << "Invalid field set '" << *it << "'";
+
+	};
+
+	return ossError.str();
+}
+
+std::string CBrdExtentRepeatPickup::Parse(std::string str)
+{
+	std::ostringstream ossError;
+
+	str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
+	str.erase(std::remove(str.begin(), str.end(), '\t'), str.end());
+
+	// split into key value pairs
+	std::vector<std::string> kvps;
+	split(str, ",", [&](std::string const &kvp) { kvps.push_back(kvp); });
+
+	return Parse(kvps);
 }
 
 // **
@@ -665,6 +770,37 @@ std::string CBrdExtent::Dump() const
 	}
 
 	return oss.str();
+}
+
+std::string CBrdExtent::Parse(std::string str)
+{
+	std::ostringstream ossError;
+
+	// std::cout << __func__ << " " << __LINE__ << " - '" << str << "'" << std::endl;
+	// remove white space
+	str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
+	str.erase(std::remove(str.begin(), str.end(), '\t'), str.end());
+
+	// split extent type and data
+	std::vector<std::string> etad;
+	split(str, "-", [&](std::string const &str) { etad.push_back(str); });
+
+	// split into key value pairs
+	std::vector<std::string> kvps;
+	split(etad[1], ",", [&](std::string const &kvp) { kvps.push_back(kvp); });
+
+	if(etad[0] == "LAE")
+	{
+		CBrdExtentLAE lae;
+		ossError << lae.Parse(kvps);
+	}
+	else if(etad[0] == "Repeat Pickup")
+	{
+		CBrdExtentRepeatPickup repeatPickup;
+		ossError << repeatPickup.Parse(kvps);
+	}
+
+	return ossError.str();
 }
 
 // **

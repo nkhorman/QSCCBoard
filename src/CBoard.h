@@ -463,7 +463,9 @@ public:
 	inline void VacVerify(bool v) { mbVacVerify = v; };
 
 	std::string Dump() const;
-	
+	std::string Parse(std::string str);
+	std::string Parse(std::vector<std::string> &kvps);
+
 protected:
 	uint mNext;
 	CBrdMeas mWidth;
@@ -551,6 +553,8 @@ public:
 	inline void Rows(uint v) { mRows = v; };
 
 	std::string Dump() const;
+	std::string Parse(std::string str);
+	std::string Parse(std::vector<std::string> &kvps);
 	
 protected:
 	uint mNext;
@@ -600,6 +604,8 @@ public:
 	// inline CBrdExtentTransportB const &TransportB() const { return mTransportB; };
 
 	std::string Dump() const;
+	std::string Parse(std::string str);
+
 protected:
 	uint mCmd;
 	CBrdExtentLAE mLae;

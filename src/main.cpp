@@ -39,6 +39,8 @@ protected:
 	std::string ImportPlace(std::ifstream &ifs);
 	std::string ImportPickup(std::ifstream &ifs);
 	std::string ImportChuck(std::ifstream &ifs);
+	std::string ImportExtent(std::ifstream &ifs);
+
     std::string Import(std::vector<std::string> const &args);
     std::string Export(std::vector<std::string> const &args);
 
@@ -158,6 +160,25 @@ std::string CBoardEx::ImportChuck(std::ifstream &ifs)
 	return ossError.str();
 }
 
+std::string CBoardEx::ImportExtent(std::ifstream &ifs)
+{
+	std::vector<CBrdExtent> ar;
+	std::ostringstream ossError;
+
+	StreamRead(ifs, ossError, [&](std::string const &strLine, std::ostringstream &ossError)
+	{
+		CBrdExtent extent;
+		ossError << extent.Parse(strLine);
+		if(ossError.str().size() == 0)
+			ar.push_back(extent);
+
+		return true;
+	});
+
+	if(ossError.str().size() == 0 && ar.size())
+		mExtent = ar;
+	else ossError << "No extents imported.";
+
 	return ossError.str();
 }
 
@@ -180,6 +201,8 @@ std::string CBoardEx::Import(std::vector<std::string> const &args)
 				ossError << ImportPickup(ifstr);
 			else if(sectionName == "chuck")
 				ossError << ImportChuck(ifstr);
+			else if(sectionName == "extent")
+				ossError << ImportExtent(ifstr);
 			else
 				ossError << "Error - Import - Invalid secion name. Try;"
 					// " sequence, pickup, place, chuck, repeat pickup, repeat place, or extent"
