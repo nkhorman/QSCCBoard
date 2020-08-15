@@ -372,7 +372,7 @@ public:
 	inline CBrdLoc const &Loc() const { return mLoc; };
 
 	std::string Dump() const;
-	std::string ParsePlace(std::string str);
+	std::string Parse(std::string str);
 
 protected:
 	uint mAltIndex;

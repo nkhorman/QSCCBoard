@@ -497,7 +497,7 @@ std::string CBrdPPC::Dump() const
 	return oss.str();
 }
 
-std::string CBrdPPC::ParsePlace(std::string str)
+std::string CBrdPPC::Parse(std::string str)
 {
 	std::ostringstream ossError;
 
