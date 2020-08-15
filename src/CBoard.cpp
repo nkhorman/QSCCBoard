@@ -523,10 +523,11 @@ std::string CBrdPPC::Parse(std::string str)
 		{
 			std::string k = ar[0];
 			std::string v = ar[1];
+			uint vNum = std::atoi(v.c_str());
 
-			if(k == "extent") { mExtent = std::atoi(v.c_str()); }
+			if(k == "extent") { mExtent = vNum; }
 			else if(k == "x" || k == "y" || k == "z" || k == "t") { mLoc.Parse(k, v); }
-			else if(k == "next" || k == "altindex") { mAltIndex = std::atoi(v.c_str()); }
+			else if(k == "next" || k == "altindex") { mAltIndex = vNum; }
 			else ossError << "Invalid field name '" << k << "'";
 		}
 		else ossError << "Invalid field set '" << *it << "'";
