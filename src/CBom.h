@@ -33,6 +33,7 @@ public:
 
 	std::string Parse(std::string const &str, std::function<void(std::string const &)> fn);
 	std::string Export(uint &lastChuckNum, std::map<std::string, std::pair<uint, uint>> &placeMap) const;
+	std::string ExportExtent() const;
 
 	std::string Dump();
 

@@ -76,6 +76,25 @@ std::string CBomPickup::Export(uint &lastChuckNum, std::map<std::string, std::pa
 	return oss.str();
 }
 
+std::string CBomPickup::ExportExtent() const
+{
+	std::ostringstream oss;
+	uint tol = 20;
+	float tolFl = 1.0 + ((float)(tol-5) / 100);
+	uint height = 40; // height percentage
+	float heightFl = (float)(height) / 100;
+
+	oss << "extent " << mNum << " - LAE -"
+		<< " Length: " << (uint)(mSize.x() * tolFl) << ", Tol: " << tol
+		<< ", Width: " << (uint)(mSize.y() * tolFl) << ", Tol: " << tol
+		<< ", Height: " << (uint)(mSize.z() * heightFl)
+		<< ", MeasureType: 1"
+		<< std::endl
+		;
+
+	return oss.str();
+}
+
 std::string CBomPickup::Dump()
 {
 	std::ostringstream oss;
