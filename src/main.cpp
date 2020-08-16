@@ -479,6 +479,9 @@ int main(int argc, char **argv)
 			if(ossError.str().size() == 0 && mapArgs.find("placeout") != mapArgs.end())
 				ossError << bom.ExportPlace(mapArgs["placeout"], mapArgs["placerefout"]);
 
+			if(ossError.str().size() == 0 && mapArgs.find("extentout") != mapArgs.end())
+				ossError << bom.ExportPickupExtent(mapArgs["extentout"]);
+
 			if(ossError.str().c_str())
 				std::cerr << ossError.str() << std::endl;
 		}
