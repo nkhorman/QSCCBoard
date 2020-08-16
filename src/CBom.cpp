@@ -67,7 +67,6 @@ std::string CBomPickup::Export(uint &lastChuckNum, std::map<std::string, std::pa
 			[](const unsigned char i){ return tolower(i); });
 		uint placeNum = placeMap[lowerPartName].second;
 
-		(void)str;
 		oss << "pickup " << mNum << std::endl
 			<< "place " << placeNum << std::endl
 			;
