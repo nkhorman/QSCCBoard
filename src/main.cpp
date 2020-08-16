@@ -40,6 +40,7 @@ protected:
 	std::string ImportPickup(std::ifstream &ifs);
 	std::string ImportChuck(std::ifstream &ifs);
 	std::string ImportExtent(std::ifstream &ifs);
+	std::string ImportPickupExtent(std::ifstream &ifs);
 
     std::string Import(std::vector<std::string> const &args);
     std::string Export(std::vector<std::string> const &args);
@@ -193,6 +194,46 @@ std::string CBoardEx::ImportExtent(std::ifstream &ifs)
 	return ossError.str();
 }
 
+std::string CBoardEx::ImportPickupExtent(std::ifstream &ifs)
+{
+	std::ostringstream ossError;
+
+	StreamRead(ifs, ossError, [&](std::string const &strLine, std::ostringstream &ossError) mutable
+	{
+		std::vector<std::string> fields;
+		std::string str(strLine);
+
+		std::cout << "str: '" << str << "'" << std::endl;
+		str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
+		split(str, ",", [&](std::string const &item){ fields.push_back(item); std::cout << "field '" << item << "'" << std::endl; });
+
+		std::map<std::string, std::string> fieldMap;
+		for(uint i=0,q=fields.size(); i<q; i++)
+		{
+			std::cout << "debug: ImportPickupExtent: field " << i << " '" << fields[i] << "'" << std::endl;
+			std::vector<std::string> ar;
+			split(fields[i], ":", [&](std::string const &item) { ar.push_back(item); });
+			fieldMap[ar[0]] = ar[1];
+			std::cout << "debug: ImportPickupExtent: ar0: '" << ar[0] << "', ar1: '" << ar[1] << "'" << std::endl;
+		}
+
+		if(fieldMap.find("pickup") != fieldMap.end() && fieldMap.find("extent") != fieldMap.end())
+		{
+			uint numPickup = std::atoi(fieldMap["pickup"].c_str());
+			uint numExtent = std::atoi(fieldMap["extent"].c_str());
+
+			if(numPickup && numExtent && numPickup < mPickup.size())
+				mPickup[numPickup].Extent(numExtent);
+			else ossError << "Error - PickupExtent - invalid pickup or extent";
+		}
+		else ossError << "Error - PickupExtent - missing fields";
+
+		return ossError.str().size() == 0;
+	});
+
+	return ossError.str();
+}
+
 std::string CBoardEx::Import(std::vector<std::string> const &args)
 {
 	std::ostringstream ossError;
@@ -214,6 +255,8 @@ std::string CBoardEx::Import(std::vector<std::string> const &args)
 				ossError << ImportChuck(ifstr);
 			else if(sectionName == "extent")
 				ossError << ImportExtent(ifstr);
+			else if(sectionName == "pickupextents")
+				ossError << ImportPickupExtent(ifstr);
 			else
 				ossError << "Error - Import - Invalid secion name. Try;"
 					// " sequence, pickup, place, chuck, repeat pickup, repeat place, or extent"
