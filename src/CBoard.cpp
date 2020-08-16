@@ -587,7 +587,7 @@ std::string CBrdExtentLAE::Parse(std::vector<std::string> &kvps)
 		std::vector<std::string> ar;
 		split(*it, "=:", [&](std::string const &item) { ar.push_back(item); });
 
-		if(ar.size() >= 4)
+		if(ar.size() == 2)
 		{
 			std::string k = ar[0];
 			std::string v = ar[1];
@@ -785,20 +785,37 @@ std::string CBrdExtent::Parse(std::string str)
 	std::vector<std::string> etad;
 	split(str, "-", [&](std::string const &str) { etad.push_back(str); });
 
+	if(etad[0].find("extent") != std::string::npos)
+		etad[0].erase(0,6);
+
+	Num(std::atoi(etad[0].c_str()));
+
 	// split into key value pairs
 	std::vector<std::string> kvps;
-	split(etad[1], ",", [&](std::string const &kvp) { kvps.push_back(kvp); });
+	split(etad[2], ",", [&](std::string const &kvp) { kvps.push_back(kvp); });
 
-	if(etad[0] == "LAE")
+	if(etad[1] == "lae")
 	{
 		CBrdExtentLAE lae;
 		ossError << lae.Parse(kvps);
+		if(ossError.str().size() == 0)
+		{
+			Cmd(12);
+			mLae = lae;
+		}
 	}
-	else if(etad[0] == "Repeat Pickup")
+	else if(etad[1] == "repeat pickup")
 	{
 		CBrdExtentRepeatPickup repeatPickup;
 		ossError << repeatPickup.Parse(kvps);
+		if(ossError.str().size() == 0)
+		{
+			Cmd(1);
+			mRepeat = repeatPickup;
+		}
 	}
+	else
+		ossError << " unknown extent type: " << etad[1];
 
 	return ossError.str();
 }
