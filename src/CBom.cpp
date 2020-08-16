@@ -253,7 +253,7 @@ static bool cbp_compare(const CBomPickup &lhs, const CBomPickup &rhs)
 	return false; // lhs is < rhs
 }
 
-std::string CBom::ExportPickup(
+std::string CBom::ExportSequence(
 	std::string fname, std::string fnameRef
 	, std::string fnamePre, std::string fnamePost
 	)
