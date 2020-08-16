@@ -168,9 +168,20 @@ std::string CBoardEx::ImportExtent(std::ifstream &ifs)
 	StreamRead(ifs, ossError, [&](std::string const &strLine, std::ostringstream &ossError)
 	{
 		CBrdExtent extent;
+
 		ossError << extent.Parse(strLine);
 		if(ossError.str().size() == 0)
-			ar.push_back(extent);
+		{
+			uint num = extent.Num();
+
+			if(num == 0)
+				num = ar.size()+1;
+
+			if(num && ar.size() < num)
+				ar.resize(num);
+			if(num)
+				ar[num-1] = extent;
+		}
 
 		return true;
 	});
