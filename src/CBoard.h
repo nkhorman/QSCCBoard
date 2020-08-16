@@ -368,8 +368,10 @@ public:
 	brd_fmt_pickplacechuck_t extract() const;
 
 	inline uint AltIndex() const { return mAltIndex; };
-	inline uint Extent() const { return mExtent; };
 	inline CBrdLoc const &Loc() const { return mLoc; };
+
+	inline uint Extent() const { return mExtent; };
+	inline void Extent(uint v) { mExtent = v; };
 
 	std::string Dump() const;
 	std::string Parse(std::string str);
@@ -571,10 +573,12 @@ class CBrdExtent
 {
 public:
 	CBrdExtent()
-		: mCmd(0)
+		: mNum(0)
+		, mCmd(0)
 		{};
 	CBrdExtent(brd_fmt_extent_t brdExtent)
-		: mCmd(0)
+		: mNum(0)
+		, mCmd(0)
 		{
 			insert(brdExtent);
 		};
@@ -587,6 +591,9 @@ public:
 
 	void insert(brd_fmt_extent_t v);
 	brd_fmt_extent_t extract() const;
+
+	inline void Num(uint v) { mNum = v; };
+	inline uint Num() const { return mNum; };
 
 	inline void Cmd(uint v) { mCmd = v; };
 	inline uint Cmd() const { return mCmd; };
@@ -607,6 +614,7 @@ public:
 	std::string Parse(std::string str);
 
 protected:
+	uint mNum;
 	uint mCmd;
 	CBrdExtentLAE mLae;
 	CBrdExtentRepeatPickup mRepeat;
