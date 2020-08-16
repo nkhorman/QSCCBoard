@@ -331,6 +331,26 @@ std::string CBom::ExportSequence(
 
 	return ossError.str();
 }
+std::string CBom::ExportPickupExtent(std::string fname)
+{
+	std::ostringstream ossError;
+	std::ofstream ofs(fname.c_str(), std::ofstream::out | std::ofstream::trunc);
+	
+	if(ofs.is_open())
+	{
+		std::for_each(mPickup.begin(), mPickup.end(), [&](CBomPickup const &item)
+		{
+			ofs << item.ExportExtent();
+		});
+
+		ofs.flush();
+		ofs.clear();
+	}
+	else ossError << "Error - PickupExtent - Unable to open file '" << fname << "'";
+
+	return ossError.str();
+
+}
 
 std::string CBom::ImportPlace(std::string fname, CBrdLoc const &home)
 {

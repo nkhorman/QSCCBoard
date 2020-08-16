@@ -115,6 +115,7 @@ public:
 
 	std::string ImportPickup(std::string fname);
 	std::string ExportSequence(std::string fname, std::string fnameRef, std::string fnamePre, std::string fnamePost);
+	std::string ExportPickupExtent(std::string fname);
 
 	std::string ImportPlace(std::string fname, CBrdLoc const &home);
 	std::string ExportPlace(std::string fname, std::string fnameRef);
