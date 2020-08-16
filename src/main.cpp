@@ -382,6 +382,22 @@ int main(int argc, char **argv)
 		std::transform(action.begin(), action.end(), action.begin(), [](const unsigned char i){ return tolower(i); });
 		split(val, "     ", [&](std::string const &v) { vals.push_back(v); });
 
+		std::map<std::string, std::string> mapArgs;
+		std::for_each(vals.begin(), vals.end(), [&](std::string const &v)
+		{
+			if(v.find("=") != std::string::npos)
+			{
+				std::vector<std::string> ar;
+				split(v, "=", [&](std::string const &item){ ar.push_back(item); });
+				if(ar.size())
+				{
+					std::string k = ar[0];
+					std::transform(k.begin(), k.end(), k.begin(), [](const unsigned char i){ return tolower(i); });
+					mapArgs[k] = ar[1];
+				}
+			}
+		});
+
         // std::cout << "key: " << key << ", val: " << val << std::endl;
 		if(action == "read")
         {
@@ -415,20 +431,9 @@ int main(int argc, char **argv)
         {
             std::cout << board.SectionDump(val);
         }
-		// --bom pickup=bom.pu place=bom.pl sequence=brd.seq
 		else if(action == "bom")
 		{
 			CBom bom;
-			std::map<std::string, std::string> mapArgs;
-
-			std::for_each(vals.begin(), vals.end(), [&](std::string const &v)
-			{
-				std::vector<std::string> ar;
-				split(v, "=", [&](std::string const &item){ ar.push_back(item); });
-				std::string k = ar[0];
-				std::transform(k.begin(), k.end(), k.begin(), [](const unsigned char i){ return tolower(i); });
-				mapArgs[k] = ar[1];
-			});
 
 			std::ostringstream ossError;
 
@@ -479,18 +484,6 @@ int main(int argc, char **argv)
 		}
 		else if(action == "fid")
 		{
-			std::map<std::string, std::string> mapArgs;
-			bool bRotate90 = true;
-
-			std::for_each(vals.begin(), vals.end(), [&](std::string const &v)
-			{
-				std::vector<std::string> ar;
-				split(v, "=", [&](std::string const &item){ ar.push_back(item); });
-				std::string k = ar[0];
-				std::transform(k.begin(), k.end(), k.begin(), [](const unsigned char i){ return tolower(i); });
-				mapArgs[k] = ar[1];
-			});
-
 			if(mapArgs.find("rotate0") != mapArgs.end())
 				bRotate90 = false;
 			if(mapArgs.find("rotate90") != mapArgs.end())
