@@ -258,7 +258,7 @@ std::string CBoardEx::Import(std::vector<std::string> const &args)
 			else if(sectionName == "pickupextents")
 				ossError << ImportPickupExtent(ifstr);
 			else
-				ossError << "Error - Import - Invalid secion name. Try;"
+				ossError << "Error - Import - Invalid section name. Try;"
 					// " sequence, pickup, place, chuck, repeat pickup, repeat place, or extent"
 					" sequence, pickup, or place"
 					;
@@ -301,7 +301,7 @@ std::string CBoardEx::Export(std::vector<std::string> const &args)
 		else if(sectionName == "extent")
 			for(uint i=0,q=mExtent.size(); i<q; i++) { oss << mExtent[i].Dump() << std::endl; }
 		else
-			ossError << "Error - Export - Invalid secion name. Try;"
+			ossError << "Error - Export - Invalid section name. Try;"
 				" sequence, pickup, place, chuck, repeat pickup, repeat place, or extent"
 				;
 
