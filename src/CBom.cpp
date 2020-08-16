@@ -261,8 +261,8 @@ std::string CBom::ExportPickup(
 	std::ostringstream ossError;
 	std::ofstream ofs(fname.c_str(), std::ofstream::out | std::ofstream::trunc);
 	std::ofstream ofsRef(fnameRef.c_str(), std::ofstream::out | std::ofstream::trunc);
-	std::ifstream ofsPre(fnamePre.c_str(), std::ofstream::in);
-	std::ifstream ofsPost(fnamePost.c_str(), std::ofstream::in);
+	std::ifstream ifsPre(fnamePre.c_str(), std::ofstream::in);
+	std::ifstream ifsPost(fnamePost.c_str(), std::ofstream::in);
 
 	if(ofs.is_open())
 	{
@@ -272,11 +272,11 @@ std::string CBom::ExportPickup(
 		std::for_each(mPickup.begin(), mPickup.end(), [&](CBomPickup const &item) { cbpl.push_back(item); });
 		cbpl.sort(cbp_compare);
 
-		if(ofsPre.is_open())
+		if(ifsPre.is_open())
 		{
-			ofs << ofsPre.rdbuf();
+			ofs << ifsPre.rdbuf();
 			ofs.flush();
-			ofsPre.close();
+			ifsPre.close();
 		}
 		std::map<std::string, std::pair<uint, uint>> partPickupPlaceNumCopy = mPartPickupPlaceNum;
 
@@ -292,11 +292,11 @@ std::string CBom::ExportPickup(
 			}
 		});
 
-		if(ofsPost.is_open())
+		if(ifsPost.is_open())
 		{
-			ofs << ofsPost.rdbuf();
+			ofs << ifsPost.rdbuf();
 			ofs.flush();
-			ofsPost.close();
+			ifsPost.close();
 		}
 		ofs << "chuck 0" << std::endl << "goto 0" << std::endl;
 
