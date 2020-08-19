@@ -598,10 +598,10 @@ public:
 	inline void Cmd(uint v) { mCmd = v; };
 	inline uint Cmd() const { return mCmd; };
 
-	inline void Lae(CBrdExtentLAE v) { mLae = v; };
+	inline void Lae(CBrdExtentLAE v) { mCmd = 12; mLae = v; };
 	CBrdExtentLAE const &Lae() const { return mLae; };
 
-	inline void Repeat(CBrdExtentRepeatPickup v) { mRepeat = v; };
+	inline void Repeat(CBrdExtentRepeatPickup v) { mCmd = 1; mRepeat = v; };
 	inline CBrdExtentRepeatPickup const &Repeat() const { return mRepeat; };
 
 	// inline void TransportA(CBrdExtentTransportA v) { mTransportA = v; };
