@@ -179,7 +179,19 @@ std::string CBoardEx::ImportExtent(std::ifstream &ifs)
 				num = ar.size()+1;
 
 			if(num && ar.size() < num)
+			{
+				uint oldNum = ar.size();
+				CBrdExtent ext;
+
+				ext.Lae(CBrdExtentLAE());
+
 				ar.resize(num);
+				for(uint i=oldNum; i<num; i++)
+				{
+					ext.Num(i+1);
+					ar[i] = CBrdExtent(ext);
+				}
+			}
 			if(num)
 				ar[num-1] = extent;
 		}
