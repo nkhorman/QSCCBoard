@@ -232,7 +232,7 @@ std::string CBoardEx::ImportPickupExtent(std::ifstream &ifs)
 			uint numExtent = std::atoi(fieldMap["extent"].c_str());
 
 			if(numPickup && numExtent && numPickup < mPickup.size())
-				mPickup[numPickup].Extent(numExtent);
+				mPickup[numPickup-1].Extent(numExtent);
 			else ossError << "Error - PickupExtent - invalid pickup or extent";
 		}
 		else ossError << "Error - PickupExtent - missing fields";
