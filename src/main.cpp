@@ -378,6 +378,26 @@ std::string CBoardEx::SectionDump(std::string sectionName)
     return oss.str();
 }
 
+std::map<std::string, std::string>mapArgKvp(std::vector<std::string>vals)
+{
+	std::map<std::string, std::string> mapArgs;
+
+	std::for_each(vals.begin(), vals.end(), [&](std::string const &v)
+	{
+		//std::cout << "vals '" << v << "'" << std::endl;
+		std::vector<std::string> ar;
+		split(v, "=", [&](std::string const &item){ ar.push_back(item); });
+		if(ar.size())
+		{
+			std::string k = ar[0];
+			std::transform(k.begin(), k.end(), k.begin(), [&](const unsigned char i){ return tolower(i); });
+			mapArgs[k] = ar[1];
+		}
+	});
+
+	return mapArgs;
+}
+
 int main(int argc, char **argv)
 {
     CAppArg cliargs(argc, argv);
@@ -388,26 +408,12 @@ int main(int argc, char **argv)
     {
 		std::string action = key;
 	    std::vector<std::string> vals;
-		std::transform(action.begin(), action.end(), action.begin(), [](const unsigned char i){ return tolower(i); });
+
+        std::cout << "--" << key << " " << val << std::endl;
+
+		std::transform(action.begin(), action.end(), action.begin(), [&](const unsigned char i){ return tolower(i); });
 		split(val, "     ", [&](std::string const &v) { vals.push_back(v); });
 
-		std::map<std::string, std::string> mapArgs;
-		std::for_each(vals.begin(), vals.end(), [&](std::string const &v)
-		{
-			if(v.find("=") != std::string::npos)
-			{
-				std::vector<std::string> ar;
-				split(v, "=", [&](std::string const &item){ ar.push_back(item); });
-				if(ar.size())
-				{
-					std::string k = ar[0];
-					std::transform(k.begin(), k.end(), k.begin(), [](const unsigned char i){ return tolower(i); });
-					mapArgs[k] = ar[1];
-				}
-			}
-		});
-
-        // std::cout << "key: " << key << ", val: " << val << std::endl;
 		if(action == "read")
         {
             std::ifstream ifstr(val.c_str(), std::ifstream::in | std::ifstream::binary);
@@ -431,8 +437,8 @@ int main(int argc, char **argv)
         }
         else if(action == "export" || action == "import")
         {
-
             std::string strError = board.ImportExport(action == "import", vals);
+
 			if(strError.size())
 				std::cerr << strError << std::endl;
         }
@@ -443,19 +449,15 @@ int main(int argc, char **argv)
 		else if(action == "bom")
 		{
 			CBom bom;
-
 			std::ostringstream ossError;
+			std::map<std::string, std::string> mapArgs = mapArgKvp(vals);
 
 			if(mapArgs.find("rotate0") != mapArgs.end())
-			{
-				bom.Rotate90(false);
 				bRotate90 = false;
-			}
 			if(mapArgs.find("rotate90") != mapArgs.end())
-			{
-				bom.Rotate90(true);
 				bRotate90 = true;
-			}
+
+			bom.Rotate90(bRotate90);
 
 			if(mapArgs.find("chuck") != mapArgs.end())
 				ossError << bom.ImportChuck(mapArgs["chuck"]);
@@ -487,7 +489,6 @@ int main(int argc, char **argv)
 				);
 			if(ossError.str().size() == 0 && mapArgs.find("placeout") != mapArgs.end())
 				ossError << bom.ExportPlace(mapArgs["placeout"], mapArgs["placerefout"]);
-
 			if(ossError.str().size() == 0 && mapArgs.find("extentout") != mapArgs.end())
 				ossError << bom.ExportPickupExtent(mapArgs["extentout"]);
 
@@ -496,16 +497,17 @@ int main(int argc, char **argv)
 		}
 		else if(action == "fid")
 		{
-			if(mapArgs.find("rotate0") != mapArgs.end())
-				bRotate90 = false;
-			if(mapArgs.find("rotate90") != mapArgs.end())
-				bRotate90 = true;
-
 			std::ostringstream ossError;
+			std::map<std::string, std::string> mapArgs = mapArgKvp(vals);
 			uint width = (mapArgs.find("width") != mapArgs.end()
 				? std::atoi(mapArgs["width"].c_str())
 				: 0);
 			CBrdLoc machineHome;
+
+			if(mapArgs.find("rotate0") != mapArgs.end())
+				bRotate90 = false;
+			if(mapArgs.find("rotate90") != mapArgs.end())
+				bRotate90 = true;
 
 			if(mapArgs.find("home") != mapArgs.end())
 			{
