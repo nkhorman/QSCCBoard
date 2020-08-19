@@ -215,18 +215,15 @@ std::string CBoardEx::ImportPickupExtent(std::ifstream &ifs)
 		std::vector<std::string> fields;
 		std::string str(strLine);
 
-		std::cout << "str: '" << str << "'" << std::endl;
 		str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
-		split(str, ",", [&](std::string const &item){ fields.push_back(item); std::cout << "field '" << item << "'" << std::endl; });
+		split(str, ",", [&](std::string const &item){ fields.push_back(item); });
 
 		std::map<std::string, std::string> fieldMap;
 		for(uint i=0,q=fields.size(); i<q; i++)
 		{
-			std::cout << "debug: ImportPickupExtent: field " << i << " '" << fields[i] << "'" << std::endl;
 			std::vector<std::string> ar;
 			split(fields[i], ":", [&](std::string const &item) { ar.push_back(item); });
 			fieldMap[ar[0]] = ar[1];
-			std::cout << "debug: ImportPickupExtent: ar0: '" << ar[0] << "', ar1: '" << ar[1] << "'" << std::endl;
 		}
 
 		if(fieldMap.find("pickup") != fieldMap.end() && fieldMap.find("extent") != fieldMap.end())
