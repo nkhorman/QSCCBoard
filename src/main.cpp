@@ -491,7 +491,7 @@ int main(int argc, char **argv)
 			if(ossError.str().size() == 0 && mapArgs.find("extentout") != mapArgs.end())
 				ossError << bom.ExportPickupExtent(mapArgs["extentout"]);
 
-			if(ossError.str().c_str())
+			if(ossError.str().size())
 				std::cerr << ossError.str() << std::endl;
 		}
 		else if(action == "fid")
