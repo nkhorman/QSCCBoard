@@ -72,27 +72,45 @@ std::string CFiducial::Import(std::string fname)
 	return ossError.str();
 }
 
-std::string CFiducial::ExportRef(std::string prefix, uint num, CBrdLoc loc)
+std::string CFiducial::ExportRef(std::string prefix, uint num, CBrdLoc loc, std::map<std::string, uint> settings)
 {
 	std::ostringstream oss;
 	bool bIsUsed = (loc.x() != 0 || loc.y() != 0);
 
 	if(bIsUsed)
 	{
+		if(settings.size() == 0)
+		{
+			// system generated default, hardcoded here
+			settings["vid.fore"] = 75;
+			settings["vid.back"] = 90;
+			settings["light1.level"] = 150;
+			settings["light2.level"] = 150;
+			settings["fid.dia"] = 58;
+			settings["fid.search.x"] = 300;
+			settings["fid.search.y"] = 300;
+		}
+
 		// PF11 Y +0.00000e+000 21.703 06.898 00.000 00.000 00 0.000 0.000 000 000 0.300 0.300 0.058 0.058 001 075 090 000 000 000 0001 96 0002 96
-		float fdia = (float)60 / 1000; // fiducial diameter
 
 		// Specifying mils in floats... I don't understand this thinking
 		oss << prefix << num << " " << (bIsUsed ? "Y" : "N") << " +0.00000e+000"
 			<< " " << std::setfill('0') << std::setw(6) << std::setprecision(5) << ((float)loc.x() / 1000) //"21.703 06.898"
 			<< " " << std::setfill('0') << std::setw(6) << std::setprecision(5) << ((float)loc.y() / 1000) //"21.703 06.898"
-			<< " 00.000 00.000 00 0.000 0.000 000 000 0.300 0.300"
+			<< " 00.000 00.000 00 0.000 0.000 000 000"
 			// the std stream formatter is some fucked up shit! cause ... who wants trailing zeros ?
 			// I just want precision to be 3... FUCK!
-			<< " " << std::setfill('0') << std::left << std::setw(5) << std::setprecision(5) << fdia //" 0.058 0.058 "
-			<< " " << std::setfill('0') << std::left << std::setw(5) << std::setprecision(5) << fdia //" 0.058 0.058 "
+			<< " " << std::setfill('0') << std::left << std::setw(5) << std::setprecision(5) << ((float)settings["fid.search.x"]/ 1000) // search window size
+			<< " " << std::setfill('0') << std::left << std::setw(5) << std::setprecision(5) << ((float)settings["fid.search.y"]/ 1000) // search window size
+			<< " " << std::setfill('0') << std::left << std::setw(5) << std::setprecision(5) << ((float)settings["fid.dia"]/ 1000) //" 0.058 0.058 "
+			<< " " << std::setfill('0') << std::left << std::setw(5) << std::setprecision(5) << ((float)settings["fid.dia"]/ 1000)  //" 0.058 0.058 "
 			<< " " << std::setfill('0') << std::right << std::setw(3) << num
-			<< " 075 090 000 000 000 0001 96 0002 96";
+			<< " " << std::setfill('0') << std::right << std::setw(3) << settings["vid.fore"] % 256 // videometer foreground
+			<< " " << std::setfill('0') << std::right << std::setw(3) << settings["vid.back"] % 256 // videometer background
+			<< " 000 000 000"
+			<< " 0001 " << std::setfill('0') << std::setbase(16) << std::setw(2) << settings["light1.level"] % 256 // light 1, level in hex ?
+			<< " 0002 " << std::setfill('0') << std::setbase(16) << std::setw(2) << settings["light2.level"] % 255 // light 2, level in hex ?
+			;
 	}
 	else
 		oss << prefix << num << " N +0.00000e+000 00.000 00.000 00.000 00.000 00 0.000 0.000 000 000 0.000 0.000 0.000 0.000 000 075 090 000 000 000 0000 00 0000 00";
@@ -108,9 +126,31 @@ std::string CFiducial::Export(std::string fname)
 	if(ofs.is_open())
 	{
 		uint i,j;
+		std::map<std::string, uint> settings;
+		std::map<std::string, uint> purple;
+		std::map<std::string, uint> blue;
+
+		// TODO - these should come from cli specified file
+		// Purple (OSHPark) board- level 40, vid 115,125 - determined empirically
+		purple["vid.fore"] = 115;
+		purple["vid.back"] = 125;
+		purple["light1.level"] = 40;
+		purple["light2.level"] = 40;
+		// Blue board- level 55, vid 170,175 - determined empirically
+		blue["vid.fore"] = 170;
+		blue["vid.back"] = 175;
+		blue["light1.level"] = 55;
+		blue["light2.level"] = 55;
+
+		settings.insert(purple.begin(), purple.end()); // merge lighting into other "for use" settings
+		// fiducial params
+		settings["fid.dia"] = 70; // TODO - this needs to come from the artwork somehow.
+		// TODO - these need to be constrained by adjacent features, like edges or parts
+		settings["fid.search.x"] = 300;
+		settings["fid.search.y"] = 300;
 
 		for(i=0; i<6; i++)
-			ofs << ExportRef("REJ", i+1, CBrdLoc()) << "\r\n"; // CRLF cause... DOS
+			ofs << ExportRef("REJ", i+1, CBrdLoc(), settings) << "\r\n"; // CRLF cause... DOS
 		for(i=0; i<6; i++)
 		{
 			std::ostringstream pre;
@@ -122,14 +162,14 @@ std::string CFiducial::Export(std::string fname)
 				j = 0;
 				std::for_each(mFiducials.begin(), mFiducials.end(), [&](CBrdLoc const &item)
 				{
-					ofs << ExportRef(pre.str(), ++j, item) << "\r\n"; // CRLF cause... DOS
+					ofs << ExportRef(pre.str(), ++j, item, settings) << "\r\n"; // CRLF cause... DOS
 				});
 			}
 			else
 			{
 				pre << (i+1);
 				for(j=0; j<3; j++)
-					ofs << ExportRef(pre.str(), j+1, CBrdLoc()) << "\r\n"; // CRLF cause... DOS
+					ofs << ExportRef(pre.str(), j+1, CBrdLoc(), settings) << "\r\n"; // CRLF cause... DOS
 			}
 		}
 		for(i=0; i<6; i++)
@@ -139,7 +179,7 @@ std::string CFiducial::Export(std::string fname)
 			pre << "IF";
 			pre << (i+1);
 			for(j=0; j<3; j++)
-				ofs << ExportRef(pre.str(), j+1, CBrdLoc()) << "\r\n"; // CRLF cause... DOS
+				ofs << ExportRef(pre.str(), j+1, CBrdLoc(), settings) << "\r\n"; // CRLF cause... DOS
 		}
 		ofs.flush();
 		ofs.clear();
