@@ -32,7 +32,7 @@ public:
 	}
 
 	std::string Parse(std::string const &str, std::function<void(std::string const &)> fn);
-	std::string Export(uint &lastChuckNum, std::map<std::string, std::pair<uint, uint>> &placeMap) const;
+	std::string Export(uint &lastChuckNum, std::map<std::string, std::pair<uint, uint>> &placeMap, bool bImageRepeat) const;
 	std::string ExportExtent() const;
 
 	std::string Dump();
@@ -114,7 +114,7 @@ public:
 	virtual ~CBom() {};
 
 	std::string ImportPickup(std::string fname);
-	std::string ExportSequence(std::string fname, std::string fnameRef, std::string fnamePre, std::string fnamePost);
+	std::string ExportSequence(std::string fname, std::string fnameRef, std::string fnamePre, std::string fnamePost, bool bImageRepeat);
 	std::string ExportPickupExtent(std::string fname);
 
 	std::string ImportPlace(std::string fname, CBrdLoc const &home);

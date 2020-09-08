@@ -72,7 +72,7 @@ std::string CFiducial::Import(std::string fname)
 	return ossError.str();
 }
 
-std::string CFiducial::ExportRef(std::string prefix, uint num, CBrdLoc loc, std::map<std::string, uint> settings)
+std::string CFiducial::ExportRef(uint num, CBrdLoc loc, std::map<std::string, uint> settings)
 {
 	std::ostringstream oss;
 	bool bIsUsed = (loc.x() != 0 || loc.y() != 0);
@@ -94,7 +94,7 @@ std::string CFiducial::ExportRef(std::string prefix, uint num, CBrdLoc loc, std:
 		// PF11 Y +0.00000e+000 21.703 06.898 00.000 00.000 00 0.000 0.000 000 000 0.300 0.300 0.058 0.058 001 075 090 000 000 000 0001 96 0002 96
 
 		// Specifying mils in floats... I don't understand this thinking
-		oss << prefix << num << " " << (bIsUsed ? "Y" : "N") << " +0.00000e+000"
+		oss << num << " " << (bIsUsed ? "Y" : "N") << " +0.00000e+000"
 			<< " " << std::setfill('0') << std::setw(6) << std::setprecision(5) << ((float)loc.x() / 1000) //"21.703 06.898"
 			<< " " << std::setfill('0') << std::setw(6) << std::setprecision(5) << ((float)loc.y() / 1000) //"21.703 06.898"
 			<< " 00.000 00.000 00 0.000 0.000 000 000"
@@ -113,12 +113,12 @@ std::string CFiducial::ExportRef(std::string prefix, uint num, CBrdLoc loc, std:
 			;
 	}
 	else
-		oss << prefix << num << " N +0.00000e+000 00.000 00.000 00.000 00.000 00 0.000 0.000 000 000 0.000 0.000 0.000 0.000 000 075 090 000 000 000 0000 00 0000 00";
+		oss << num << " N +0.00000e+000 00.000 00.000 00.000 00.000 00 0.000 0.000 000 000 0.000 0.000 0.000 0.000 000 075 090 000 000 000 0000 00 0000 00";
 
 	return oss.str();
 }
 
-std::string CFiducial::Export(std::string fname)
+std::string CFiducial::Export(std::string fname, bool bFidIsImage)
 {
 	std::ostringstream ossError;
 	std::ofstream ofs(fname.c_str(), std::ofstream::out | std::ofstream::trunc);
@@ -149,37 +149,55 @@ std::string CFiducial::Export(std::string fname)
 		settings["fid.search.x"] = 300;
 		settings["fid.search.y"] = 300;
 
+		std::vector<std::string> arFidEmpty;
+		std::vector<std::string> arFid;
+
 		for(i=0; i<6; i++)
-			ofs << ExportRef("REJ", i+1, CBrdLoc(), settings) << "\r\n"; // CRLF cause... DOS
+			arFidEmpty.push_back(ExportRef(i+1, CBrdLoc(), settings));
+		
+		i = 0;
+		std::for_each(mFiducials.begin(), mFiducials.end(), [&](CBrdLoc const &item)
+		{
+			arFid.push_back(ExportRef(++i, item, settings));
+		});
+
+
+		for(i=0; i<6; i++)
+			ofs << "REJ" << arFidEmpty[i] << "\r\n";
 		for(i=0; i<6; i++)
 		{
 			std::ostringstream pre;
 			pre.str("");
 			pre << "PF";
-			if(i == 0)
+			pre << (i+1);
+			if(i == 0 && !bFidIsImage)
 			{
-				pre << (i+1);
-				j = 0;
-				std::for_each(mFiducials.begin(), mFiducials.end(), [&](CBrdLoc const &item)
-				{
-					ofs << ExportRef(pre.str(), ++j, item, settings) << "\r\n"; // CRLF cause... DOS
-				});
+				std::for_each(arFid.begin(), arFid.end(), [&](std::string const &item)
+				{ ofs << pre.str() << item << "\r\n"; });
 			}
 			else
 			{
-				pre << (i+1);
 				for(j=0; j<3; j++)
-					ofs << ExportRef(pre.str(), j+1, CBrdLoc(), settings) << "\r\n"; // CRLF cause... DOS
+					ofs << pre.str() << arFidEmpty[j] << "\r\n";
 			}
 		}
 		for(i=0; i<6; i++)
 		{
 			std::ostringstream pre;
-			pre.str();
+			pre.str("");
 			pre << "IF";
 			pre << (i+1);
-			for(j=0; j<3; j++)
-				ofs << ExportRef(pre.str(), j+1, CBrdLoc(), settings) << "\r\n"; // CRLF cause... DOS
+
+			if(i == 0 && bFidIsImage)
+			{
+				std::for_each(arFid.begin(), arFid.end(), [&](std::string const &item)
+				{ ofs << pre.str() << item << "\r\n"; });
+			}
+			else
+			{
+				for(j=0; j<3; j++)
+					ofs << pre.str() << arFidEmpty[j] << "\r\n";
+			}
 		}
 		ofs.flush();
 		ofs.clear();

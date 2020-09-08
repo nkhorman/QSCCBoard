@@ -51,13 +51,17 @@ std::string CBomPickup::Parse(std::string const &str, std::function<void(std::st
 	return ossError.str();
 }
 
-std::string CBomPickup::Export(uint &lastChuckNum, std::map<std::string, std::pair<uint, uint>> &placeMap) const
+std::string CBomPickup::Export(uint &lastChuckNum, std::map<std::string, std::pair<uint, uint>> &placeMap, bool bImageRepeat) const
 {
 	std::ostringstream oss;
 
 	if(lastChuckNum != mChuck)
 	{
+		if(bImageRepeat && lastChuckNum !=  0)
+			oss << "repeat 0" << std::endl;
 		oss << "chuck " << mChuck << std::endl;
+		if(bImageRepeat)
+			oss << "repeat 1" << std::endl;
 		lastChuckNum = mChuck;
 	}
 	std::for_each(mParts.begin(), mParts.end(), [&](std::string const &str)
@@ -274,6 +278,7 @@ static bool cbp_compare(const CBomPickup &lhs, const CBomPickup &rhs)
 std::string CBom::ExportSequence(
 	std::string fname, std::string fnameRef
 	, std::string fnamePre, std::string fnamePost
+	, bool bImageRepeat
 	)
 {
 	std::ostringstream ossError;
@@ -300,7 +305,7 @@ std::string CBom::ExportSequence(
 
 		std::for_each(cbpl.begin(), cbpl.end(), [&](CBomPickup const &item)
 		{
-			ofs << item.Export(lastChuckNum, partPickupPlaceNumCopy);
+			ofs << item.Export(lastChuckNum, partPickupPlaceNumCopy, bImageRepeat);
 			if(ofsRef.is_open())
 			{
 				std::string pickupDescription = item.Description();
@@ -316,6 +321,8 @@ std::string CBom::ExportSequence(
 			ofs.flush();
 			ifsPost.close();
 		}
+		if(bImageRepeat)
+			ofs << "repeat 0" << std::endl;
 		ofs << "chuck 0" << std::endl << "goto 0" << std::endl;
 
 		ofs.flush();
@@ -330,6 +337,7 @@ std::string CBom::ExportSequence(
 
 	return ossError.str();
 }
+
 std::string CBom::ExportPickupExtent(std::string fname)
 {
 	std::ostringstream ossError;

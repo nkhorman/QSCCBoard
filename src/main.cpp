@@ -451,6 +451,7 @@ int main(int argc, char **argv)
 			CBom bom;
 			std::ostringstream ossError;
 			std::map<std::string, std::string> mapArgs = mapArgKvp(vals);
+			bool bImageRepeat = (mapArgs.find("repeat") != mapArgs.end());
 
 			if(mapArgs.find("rotate0") != mapArgs.end())
 				bRotate90 = false;
@@ -486,6 +487,7 @@ int main(int argc, char **argv)
 					mapArgs["sequence"], mapArgs["pickuprefout"]
 					, mapArgs["sequencepre"]
 					, mapArgs["sequencepost"]
+					, bImageRepeat
 				);
 			if(ossError.str().size() == 0 && mapArgs.find("placeout") != mapArgs.end())
 				ossError << bom.ExportPlace(mapArgs["placeout"], mapArgs["placerefout"]);
@@ -526,7 +528,12 @@ int main(int argc, char **argv)
 			if(mapArgs.find("in") != mapArgs.end())
 				ossError << fid.Import(mapArgs["in"]);
 			if(ossError.str().size() == 0 && mapArgs.find("out") != mapArgs.end())
-				ossError << fid.Export(mapArgs["out"]);
+			{
+				ossError << fid.Export(
+					mapArgs["out"]
+					, mapArgs.find("type") != mapArgs.end() && mapArgs["type"] == "image"
+					);
+			}
 
 			if(ossError.str().c_str())
 				std::cerr << ossError.str() << std::endl;

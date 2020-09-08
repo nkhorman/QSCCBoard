@@ -16,13 +16,13 @@ public:
 	virtual ~CFiducial() {};
 	
 	std::string Import(std::string fname);
-	std::string Export(std::string fname);
+	std::string Export(std::string fname, bool bFidIsImage);
 
 	inline void Rotate90(bool v) { mbRotate90 = v; };
 	inline bool Rotate90() const { return mbRotate90; };
 protected:
 	std::string Parse(std::string &line);
-	std::string ExportRef(std::string prefix, uint num, CBrdLoc loc, std::map<std::string, uint> lighting);
+	std::string ExportRef(uint num, CBrdLoc loc, std::map<std::string, uint> lighting);
 
 	std::string mName;
 	std::vector<CBrdLoc> mFiducials;
