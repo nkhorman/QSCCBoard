@@ -61,7 +61,7 @@ std::string CBomPickup::Export(uint &lastChuckNum, std::map<std::string, std::pa
 			oss << "repeat 0" << std::endl;
 		oss << "chuck " << mChuck << std::endl;
 		if(bImageRepeat)
-			oss << "repeat 1" << std::endl;
+			oss << "repeat 1 image" << std::endl;
 		lastChuckNum = mChuck;
 	}
 	std::for_each(mParts.begin(), mParts.end(), [&](std::string const &str)
