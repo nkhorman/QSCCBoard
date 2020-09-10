@@ -81,7 +81,7 @@ std::string CFiducial::ExportRef(uint num, CBrdLoc loc, std::map<std::string, ui
 	{
 		if(settings.size() == 0)
 		{
-			// system generated default, hardcoded here
+			// system generated defaults, hardcoded here
 			settings["vid.fore"] = 75;
 			settings["vid.back"] = 90;
 			settings["light1.level"] = 150;
@@ -94,7 +94,7 @@ std::string CFiducial::ExportRef(uint num, CBrdLoc loc, std::map<std::string, ui
 		// PF11 Y +0.00000e+000 21.703 06.898 00.000 00.000 00 0.000 0.000 000 000 0.300 0.300 0.058 0.058 001 075 090 000 000 000 0001 96 0002 96
 
 		// Specifying mils in floats... I don't understand this thinking
-		oss << num << " " << (bIsUsed ? "Y" : "N") << " +0.00000e+000"
+		oss << " " << (bIsUsed ? "Y" : "N") << " +0.00000e+000"
 			<< " " << std::setfill('0') << std::setw(6) << std::setprecision(5) << ((float)loc.x() / 1000) //"21.703 06.898"
 			<< " " << std::setfill('0') << std::setw(6) << std::setprecision(5) << ((float)loc.y() / 1000) //"21.703 06.898"
 			<< " 00.000 00.000 00 0.000 0.000 000 000"
@@ -113,7 +113,7 @@ std::string CFiducial::ExportRef(uint num, CBrdLoc loc, std::map<std::string, ui
 			;
 	}
 	else
-		oss << num << " N +0.00000e+000 00.000 00.000 00.000 00.000 00 0.000 0.000 000 000 0.000 0.000 0.000 0.000 000 075 090 000 000 000 0000 00 0000 00";
+		oss << " N +0.00000e+000 00.000 00.000 00.000 00.000 00 0.000 0.000 000 000 0.000 0.000 0.000 0.000 000 075 090 000 000 000 0000 00 0000 00";
 
 	return oss.str();
 }
@@ -125,10 +125,11 @@ std::string CFiducial::Export(std::string fname, bool bFidIsImage)
 
 	if(ofs.is_open())
 	{
-		uint i,j;
+		uint headNum,j,count=0;
 		std::map<std::string, uint> settings;
 		std::map<std::string, uint> purple;
 		std::map<std::string, uint> blue;
+		std::ostringstream oss;
 
 		// TODO - these should come from cli specified file
 		// Purple (OSHPark) board- level 40, vid 115,125 - determined empirically
@@ -142,63 +143,77 @@ std::string CFiducial::Export(std::string fname, bool bFidIsImage)
 		blue["light1.level"] = 55;
 		blue["light2.level"] = 55;
 
-		settings.insert(purple.begin(), purple.end()); // merge lighting into other "for use" settings
+		settings.insert(purple.begin(), purple.end()); // merge lighting into the "for use" settings
 		// fiducial params
 		settings["fid.dia"] = 70; // TODO - this needs to come from the artwork somehow.
-		// TODO - these need to be constrained by adjacent features, like edges or parts
-		settings["fid.search.x"] = 300;
-		settings["fid.search.y"] = 300;
+		// TODO - these need to be constrained by adjacent features, like edges or parts... or something
+		settings["fid.search.x"] = 120;//300;
+		settings["fid.search.y"] = 120;//300;
 
 		std::vector<std::string> arFidEmpty;
 		std::vector<std::string> arFid;
 
-		for(i=0; i<6; i++)
-			arFidEmpty.push_back(ExportRef(i+1, CBrdLoc(), settings));
-		
-		i = 0;
-		std::for_each(mFiducials.begin(), mFiducials.end(), [&](CBrdLoc const &item)
-		{
-			arFid.push_back(ExportRef(++i, item, settings));
-		});
+		// build some emptys
+		for(j=0; j<6; j++)
+			arFidEmpty.push_back(ExportRef(j+1, CBrdLoc(), settings));
 
-
-		for(i=0; i<6; i++)
-			ofs << "REJ" << arFidEmpty[i] << "\r\n";
-		for(i=0; i<6; i++)
+		for(j=0; j<6; j++)
+			ofs << "REJ" << (j+1) << arFidEmpty[j] << "\r\n";
+		for(headNum=0; headNum<6; headNum++)
 		{
 			std::ostringstream pre;
 			pre.str("");
 			pre << "PF";
-			pre << (i+1);
-			if(i == 0 && !bFidIsImage)
+			pre << (headNum+1);
+			if(headNum == 0 && !bFidIsImage)
 			{
-				std::for_each(arFid.begin(), arFid.end(), [&](std::string const &item)
-				{ ofs << pre.str() << item << "\r\n"; });
+				j = 0;
+				std::for_each(mFiducials.begin(), mFiducials.end(), [&](CBrdLoc const &item)
+				{
+					oss.str("");
+					oss << pre.str() << (++j) << ExportRef(++count, item, settings);
+					arFid.push_back(oss.str());
+				});
 			}
 			else
 			{
-				for(j=0; j<3; j++)
-					ofs << pre.str() << arFidEmpty[j] << "\r\n";
+				for(j=0; j<3; j++,count++)
+				{
+					oss.str("");
+					oss << pre.str() << (j+1) << arFidEmpty[j];
+					arFid.push_back(oss.str());
+				}
 			}
 		}
-		for(i=0; i<6; i++)
+		for(headNum=0; headNum<6; headNum++)
 		{
 			std::ostringstream pre;
 			pre.str("");
 			pre << "IF";
-			pre << (i+1);
+			pre << (headNum+1);
 
-			if(i == 0 && bFidIsImage)
+			if(headNum == 0 && bFidIsImage)
 			{
-				std::for_each(arFid.begin(), arFid.end(), [&](std::string const &item)
-				{ ofs << pre.str() << item << "\r\n"; });
+				j = 0;
+				std::for_each(mFiducials.begin(), mFiducials.end(), [&](CBrdLoc const &item)
+				{
+					oss.str("");
+					oss << pre.str() << (++j) << ExportRef(++count, item, settings);
+					arFid.push_back(oss.str());
+				});
 			}
 			else
 			{
-				for(j=0; j<3; j++)
-					ofs << pre.str() << arFidEmpty[j] << "\r\n";
+				for(j=0; j<3; j++,count++)
+				{
+					oss.str("");
+					oss << pre.str() << (j+1) << arFidEmpty[j];
+					arFid.push_back(oss.str());
+				}
 			}
 		}
+		std::for_each(arFid.begin(), arFid.end(), [&](std::string const &str)
+			{ ofs << str << "\r\n"; });
 		ofs.flush();
 		ofs.clear();
 	}
