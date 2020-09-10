@@ -41,6 +41,7 @@ protected:
 	std::string ImportChuck(std::ifstream &ifs);
 	std::string ImportExtent(std::ifstream &ifs);
 	std::string ImportPickupExtent(std::ifstream &ifs);
+	std::string ImportRepeatPlace(std::ifstream &ifs);
 
     std::string Import(std::vector<std::string> const &args);
     std::string Export(std::vector<std::string> const &args);
@@ -201,7 +202,7 @@ std::string CBoardEx::ImportExtent(std::ifstream &ifs)
 
 	if(ossError.str().size() == 0 && ar.size())
 		mExtent = ar;
-	else ossError << "No extents imported.";
+	else ossError << std::endl << "No extents imported.";
 
 	return ossError.str();
 }
@@ -243,6 +244,49 @@ std::string CBoardEx::ImportPickupExtent(std::ifstream &ifs)
 	return ossError.str();
 }
 
+std::string CBoardEx::ImportRepeatPlace(std::ifstream &ifs)
+{
+	std::vector<CBrdRepeatPlace> ar;
+	std::ostringstream ossError;
+
+	StreamRead(ifs, ossError, [&](std::string const &strLine, std::ostringstream &ossError)
+	{
+		CBrdRepeatPlace repeatplace;
+
+		ossError << repeatplace.Parse(strLine);
+		if(ossError.str().size() == 0)
+		{
+			uint num = repeatplace.Num();
+
+			if(num == 0)
+				num = ar.size()+1;
+
+			if(num && ar.size() < num)
+			{
+				uint oldNum = ar.size();
+				CBrdRepeatPlace rpl;
+
+				ar.resize(num);
+				for(uint i=oldNum; i<num; i++)
+				{
+					rpl.Num(i+1);
+					ar[i] = rpl;
+				}
+			}
+			if(num)
+				ar[num-1] = repeatplace;
+		}
+
+		return true;
+	});
+
+	if(ossError.str().size() == 0 && ar.size())
+		mRepeatPlace = ar;
+	else ossError << std::endl << "No repeats imported.";
+
+	return ossError.str();
+}
+
 std::string CBoardEx::Import(std::vector<std::string> const &args)
 {
 	std::ostringstream ossError;
@@ -266,6 +310,8 @@ std::string CBoardEx::Import(std::vector<std::string> const &args)
 				ossError << ImportExtent(ifstr);
 			else if(sectionName == "pickupextents")
 				ossError << ImportPickupExtent(ifstr);
+			else if(sectionName == "repeatplace")
+				ossError << ImportRepeatPlace(ifstr);
 			else
 				ossError << "Error - Import - Invalid section name. Try;"
 					// " sequence, pickup, place, chuck, repeat pickup, repeat place, or extent"

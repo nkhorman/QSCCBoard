@@ -921,6 +921,63 @@ std::string CBrdRepeatPlace::Dump() const
 	return oss.str();
 }
 
+std::string CBrdRepeatPlace::Parse(std::vector<std::string> &kvps)
+{
+	std::ostringstream ossError;
+
+	// process kvps
+	for(std::vector<std::string>::const_iterator it= kvps.begin();
+		it != kvps.end() && ossError.str().size() == 0;
+		it++)
+	{
+		// split kvp
+		std::vector<std::string> ar;
+		split(*it, "=:", [&](std::string const &item) { ar.push_back(item); });
+
+		if(ar.size() == 2)
+		{
+			std::string k = ar[0];
+			std::string v = ar[1];
+			uint vNum = std::atoi(v.c_str());
+
+			if(k == "col") { mCol = vNum; }
+			else if(k == "row") { mRow = vNum; }
+			else if(k == "imagespancol") { mImageSpanCol = vNum; }
+			else if(k == "imagespanrow") { mImageSpanRow = vNum; }
+			else ossError << "Invalid field name '" << k << "'";
+		}
+		else ossError << "Invalid field set '" << *it << "'";
+
+	};
+
+	return ossError.str();
+}
+
+std::string CBrdRepeatPlace::Parse(std::string str)
+{
+	std::ostringstream ossError;
+
+	// std::cout << __func__ << " " << __LINE__ << " - '" << str << "'" << std::endl;
+	// remove white space
+	str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
+	str.erase(std::remove(str.begin(), str.end(), '\t'), str.end());
+
+	// split prefix and data
+	std::vector<std::string> pad;
+	split(str, "-", [&](std::string const &str) { pad.push_back(str); });
+
+	if(pad[0].find("repeat place") != std::string::npos)
+		pad[0].erase(0,12);
+
+	Num(std::atoi(pad[0].c_str()));
+
+	// split into key value pairs
+	std::vector<std::string> kvps;
+	split(pad[1], ",", [&](std::string const &kvp) { kvps.push_back(kvp); });
+
+	return Parse(kvps);
+}
+
 // **
 std::istream &operator>>(std::istream &stream, CBoard &brd)
 {

@@ -626,7 +626,8 @@ class CBrdRepeatPlace
 {
 public:
 	CBrdRepeatPlace()
-		: mImageSpanCol(0)
+		: mNum(0)
+		, mImageSpanCol(0)
 		, mRes1(0)
 		, mImageSpanRow(0)
 		, mRes2(0)
@@ -634,6 +635,13 @@ public:
 		, mRow(0)
 		{};
 	CBrdRepeatPlace(brd_place_repeat_t brdPlRe)
+		: mNum(0)
+		, mImageSpanCol(0)
+		, mRes1(0)
+		, mImageSpanRow(0)
+		, mRes2(0)
+		, mCol(0)
+		, mRow(0)
 		{
 			insert(brdPlRe);
 		};
@@ -647,13 +655,19 @@ public:
 	void insert(brd_place_repeat_t v);
 	brd_place_repeat_t extract() const;
 
+	inline void Num(uint v) { mNum = v; };
+	inline uint Num() const { return mNum; };
+
 	std::string Dump() const;
+	std::string Parse(std::string str);
+	std::string Parse(std::vector<std::string> &kvps);
 
 protected:
+	uint mNum;
 	uint mImageSpanCol;
-	uint mRes1; // stored as 16 bit value for convenience
+	uint mRes1; // 8 bit value stored as 16 bit value for convenience
 	uint mImageSpanRow;
-	uint mRes2; // stored as 16 bit value for convenience
+	uint mRes2; // 8 bit value stored as 16 bit value for convenience
 	uint mCol;
 	uint mRow;
 };
