@@ -16,7 +16,7 @@ public:
 	virtual ~CFiducial() {};
 	
 	std::string Import(std::string fname);
-	std::string Export(std::string fname, bool bFidIsImage);
+	std::string Export(std::string fname, bool bFidIsImage, std::map<std::string, uint> const &settings);
 
 	inline void Rotate90(bool v) { mbRotate90 = v; };
 	inline bool Rotate90() const { return mbRotate90; };

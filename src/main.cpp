@@ -551,6 +551,7 @@ int main(int argc, char **argv)
 				? std::atoi(mapArgs["width"].c_str())
 				: 0);
 			CBrdLoc machineHome;
+			std::string profile = (mapArgs.find("profile") != mapArgs.end() ? mapArgs["profile"] : "purple");
 
 			if(mapArgs.find("rotate0") != mapArgs.end())
 				bRotate90 = false;
@@ -575,9 +576,75 @@ int main(int argc, char **argv)
 				ossError << fid.Import(mapArgs["in"]);
 			if(ossError.str().size() == 0 && mapArgs.find("out") != mapArgs.end())
 			{
+				std::map<std::string, uint> fidProfile;
+				std::map<std::string, uint> purple;
+				std::map<std::string, uint> blue;
+				std::map<std::string, uint> black;
+				// TODO - these should come from cli specified file
+				// Purple (OSHPark) board - level 40, vid 115,125 - determined empirically
+				purple["vid.fore"] = 115;
+				purple["vid.back"] = 125;
+				purple["light1.level"] = 40;
+				purple["light2.level"] = 40;
+				// Blue board - level 55, vid 170,175 - determined empirically
+				blue["vid.fore"] = 170;
+				blue["vid.back"] = 175;
+				blue["light1.level"] = 55;
+				blue["light2.level"] = 55;
+				// Black (JLC PCB) board - level 40, vid 85,90 - determined empirically
+				black["vid.fore"] = 85;
+				black["vid.back"] = 90;
+				black["light1.level"] = 40;
+				black["light2.level"] = 40;
+
+				fidProfile = purple;
+				// fiducial params
+				fidProfile["fid.dia"] = 70; // TODO - this needs to come from the artwork somehow.
+				// TODO - these need to be constrained by adjacent features, like edges or parts... or something ?
+				fidProfile["fid.search.x"] = 120;//300;
+				fidProfile["fid.search.y"] = 120;//300;
+
+				if(profile != "")
+				{
+					// expecting... "x:1,y:2,z:3", split them at ',' and then parse them
+					std::vector<std::string> ar1;
+					split(profile, ",", [&](std::string const &item){ ar1.push_back(item); });
+					std::for_each(ar1.begin(), ar1.end(), [&](std::string const &item1)
+					{
+						if(profile == "purple")
+							std::for_each(purple.begin(), purple.end(), [&](std::pair<std::string, uint> const &pair){ fidProfile[pair.first] = pair.second; });
+						else if(profile == "blue")
+							std::for_each(blue.begin(), blue.end(), [&](std::pair<std::string, uint> const &pair){ fidProfile[pair.first] = pair.second; });
+						else if(profile == "black")
+							std::for_each(black.begin(), black.end(), [&](std::pair<std::string, uint> const &pair){ fidProfile[pair.first] = pair.second; });
+						else
+						{
+							std::vector<std::string> ar2;
+							ar2.clear();
+							split(item1, ":", [&](std::string const &item){ ar2.push_back(item); });
+							if(ar2.size() == 2)
+							{
+								if(
+									ar2[0] == "vid.fore"
+									|| ar2[0] == "vid.back"
+									|| ar2[0] == "light1.level"
+									|| ar2[0] == "light2.level"
+									|| ar2[0] == "fid.dia"
+									|| ar2[0] == "fid.search.x"
+									|| ar2[0] == "fid.search.y"
+									)
+								{
+									fidProfile[ar2[0]] = std::atol(ar2[1].c_str());
+								}
+							}
+						}
+					});
+				}
+
 				ossError << fid.Export(
 					mapArgs["out"]
 					, mapArgs.find("type") != mapArgs.end() && mapArgs["type"] == "image"
+					, fidProfile
 					);
 			}
 

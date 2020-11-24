@@ -118,7 +118,7 @@ std::string CFiducial::ExportRef(uint num, CBrdLoc loc, std::map<std::string, ui
 	return oss.str();
 }
 
-std::string CFiducial::Export(std::string fname, bool bFidIsImage)
+std::string CFiducial::Export(std::string fname, bool bFidIsImage, std::map<std::string, uint> const &settings)
 {
 	std::ostringstream ossError;
 	std::ofstream ofs(fname.c_str(), std::ofstream::out | std::ofstream::trunc);
@@ -126,30 +126,7 @@ std::string CFiducial::Export(std::string fname, bool bFidIsImage)
 	if(ofs.is_open())
 	{
 		uint headNum,j,count=0;
-		std::map<std::string, uint> settings;
-		std::map<std::string, uint> purple;
-		std::map<std::string, uint> blue;
 		std::ostringstream oss;
-
-		// TODO - these should come from cli specified file
-		// Purple (OSHPark) board- level 40, vid 115,125 - determined empirically
-		purple["vid.fore"] = 115;
-		purple["vid.back"] = 125;
-		purple["light1.level"] = 40;
-		purple["light2.level"] = 40;
-		// Blue board- level 55, vid 170,175 - determined empirically
-		blue["vid.fore"] = 170;
-		blue["vid.back"] = 175;
-		blue["light1.level"] = 55;
-		blue["light2.level"] = 55;
-
-		settings.insert(purple.begin(), purple.end()); // merge lighting into the "for use" settings
-		// fiducial params
-		settings["fid.dia"] = 70; // TODO - this needs to come from the artwork somehow.
-		// TODO - these need to be constrained by adjacent features, like edges or parts... or something
-		settings["fid.search.x"] = 120;//300;
-		settings["fid.search.y"] = 120;//300;
-
 		std::vector<std::string> arFidEmpty;
 		std::vector<std::string> arFid;
 
