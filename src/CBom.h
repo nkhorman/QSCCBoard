@@ -35,7 +35,7 @@ public:
 	std::string Export(uint &lastChuckNum, std::map<std::string, std::pair<uint, uint>> &placeMap, bool bImageRepeat) const;
 	std::string ExportExtent() const;
 
-	std::string Dump();
+	std::string Dump() const;
 
 	inline CBrdLoc const &Size() const { return mSize; };
 protected:

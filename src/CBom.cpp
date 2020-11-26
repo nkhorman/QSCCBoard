@@ -98,7 +98,7 @@ std::string CBomPickup::ExportExtent() const
 	return oss.str();
 }
 
-std::string CBomPickup::Dump()
+std::string CBomPickup::Dump() const
 {
 	std::ostringstream oss;
 
