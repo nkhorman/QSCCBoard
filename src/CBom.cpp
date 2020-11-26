@@ -254,31 +254,38 @@ std::string CBom::ImportPickup(std::string fname)
 	return ossError.str();
 }
 
-static bool cbp_compare(const CBomPickup &lhs, const CBomPickup &rhs)
+static bool cbp_compare_chuck(const CBomPickup &lhs, const CBomPickup &rhs)
 {
-	// different chuck number
-	if(lhs.Chuck() < rhs.Chuck()) return true;
+	return lhs.Chuck() < rhs.Chuck(); // lhs is < rhs
+}
 
+static bool cbp_compare_size(const CBomPickup &lhs, const CBomPickup &rhs)
+{
+	bool bLessThan = false;
 	CBrdLoc lhss = lhs.Size();
 	CBrdLoc rhss = rhs.Size();
 
 	// smaller height
 	uint lhsz = lhss.z();
 	uint rhsz = rhss.z();
-	if(lhsz && rhsz && lhsz < rhsz) return true;
+	bLessThan = (lhsz && rhsz && lhsz < rhsz);
 
-	// smaller surface area
-	uint lhsa = lhss.x() * lhss.y();
-	uint rhsa = rhss.x() * rhss.y();
-	if(lhsa && rhsa && lhsa < rhsa) return true;
+	if(!bLessThan)
+	{
+		// smaller surface area
+		uint lhsa = lhss.x() * lhss.y();
+		uint rhsa = rhss.x() * rhss.y();
+		bLessThan = (lhsa && rhsa && lhsa < rhsa);
+	}
 
-	return false; // lhs is < rhs
+	return bLessThan; // lhs is < rhs
 }
 
 std::string CBom::ExportSequence(
 	std::string fname, std::string fnameRef
 	, std::string fnamePre, std::string fnamePost
 	, bool bImageRepeat
+	, bool bSortSizeThenChuck
 	)
 {
 	std::ostringstream ossError;
@@ -293,7 +300,12 @@ std::string CBom::ExportSequence(
 		std::list<CBomPickup> cbpl;
 
 		std::for_each(mPickup.begin(), mPickup.end(), [&](CBomPickup const &item) { cbpl.push_back(item); });
-		cbpl.sort(cbp_compare);
+
+		if(bSortSizeThenChuck)
+			cbpl.sort(cbp_compare_size);
+		cbpl.sort(cbp_compare_chuck);
+		if(!bSortSizeThenChuck)
+			cbpl.sort(cbp_compare_size);
 
 		if(ifsPre.is_open())
 		{

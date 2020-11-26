@@ -114,7 +114,7 @@ public:
 	virtual ~CBom() {};
 
 	std::string ImportPickup(std::string fname);
-	std::string ExportSequence(std::string fname, std::string fnameRef, std::string fnamePre, std::string fnamePost, bool bImageRepeat);
+	std::string ExportSequence(std::string fname, std::string fnameRef, std::string fnamePre, std::string fnamePost, bool bImageRepeat, bool bSortSizeThenChuck = true);
 	std::string ExportPickupExtent(std::string fname);
 
 	std::string ImportPlace(std::string fname, CBrdLoc const &home);
